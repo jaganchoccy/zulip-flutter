@@ -160,7 +160,12 @@ class _InboxPageState extends State<InboxPage> with PerAccountStoreAwareStateMix
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Inbox')),
+      appBar: AppBar(title: const Text('Inbox'),
+        actions: [Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Image.asset('assets/bangle/icon.png'),
+      )],
+),
       body: SafeArea(
         // Don't pad the bottom here; we want the list content to do that.
         bottom: false,

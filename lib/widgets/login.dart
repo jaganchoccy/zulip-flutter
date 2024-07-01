@@ -230,7 +230,7 @@ class _AddAccountPageState extends State<AddAccountPage> {
                   labelText: zulipLocalizations.loginServerUrlInputLabel,
                   errorText: errorText,
                   helperText: kLayoutPinningHelperText,
-                  hintText: 'your-org.zulipchat.com')),
+                  hintText: '')),
               const SizedBox(height: 8),
               ElevatedButton(
                 onPressed: !_inProgress && errorText == null
@@ -438,6 +438,11 @@ class _LoginPageState extends State<LoginPage> {
 
     return Scaffold(
       appBar: AppBar(title: Text(zulipLocalizations.loginPageTitle),
+        actions: [Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Image.asset('assets/bangle/icon.png'),
+      )],
+
         bottom: _inProgress
           ? const PreferredSize(preferredSize: Size.fromHeight(4),
               child: LinearProgressIndicator(minHeight: 4)) // 4 restates default
@@ -609,6 +614,13 @@ class _UsernamePasswordFormState extends State<_UsernamePasswordForm> {
       // TODO(#110) Try to highlight CZO / Zulip Cloud realms in autofill
       child: AutofillGroup(
         child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+          Container(
+            width: 200,
+            height:180,
+            child:
+           Image.asset('assets/bangle/logo.png'),
+           ) ,// Replace with your image path
+          const SizedBox(height: 16),
           usernameField,
           const SizedBox(height: 8),
           passwordField,

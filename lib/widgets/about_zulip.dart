@@ -33,7 +33,13 @@ class _AboutZulipPageState extends State<AboutZulipPage> {
   Widget build(BuildContext context) {
     final zulipLocalizations = ZulipLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: Text(zulipLocalizations.aboutPageTitle)),
+      appBar: AppBar(
+          actions: [Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Image.asset('assets/bangle/icon.png'),
+      )],
+
+        title: Text(zulipLocalizations.aboutPageTitle)),
       body: SingleChildScrollView(
         child: SafeArea(
           minimum: const EdgeInsets.all(8), // ListView pads vertical

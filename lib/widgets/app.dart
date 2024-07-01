@@ -179,9 +179,15 @@ class ChooseAccountPage extends StatelessWidget {
     assert(!PerAccountStoreWidget.debugExistsOf(context));
     final globalStore = GlobalStoreWidget.of(context);
     return Scaffold(
+
       appBar: AppBar(
-        title: Text(zulipLocalizations.chooseAccountPageTitle),
-        actions: const [ChooseAccountPageOverflowButton()]),
+        title:  Container(
+
+        width: 120,
+            height: 140, // Adjust the height as needed
+            child: Image.asset('assets/bangle/logo.png'), // Replace with your image path
+          ),
+        actions: const [ChooseAccountPageOverflowButton()],),
       body: SafeArea(
         minimum: const EdgeInsets.fromLTRB(8, 0, 8, 8),
         child: Center(
@@ -252,22 +258,20 @@ class HomePage extends StatelessWidget {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Home")),
+      appBar: AppBar(title: const Text("Home"),
+      actions: [Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Image.asset('assets/bangle/icon.png'),
+      )],
+
+      ),
       body: Center(
         child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
           DefaultTextStyle.merge(
             textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 18),
             child: Column(children: [
-              const Text('🚧 Under construction 🚧'),
-              const SizedBox(height: 12),
-              Text.rich(TextSpan(
-                text: 'Connected to: ',
-                children: [bold(store.realmUrl.toString())])),
-              Text.rich(TextSpan(
-                text: 'Zulip server version: ',
-                children: [bold(store.zulipVersion)])),
-              Text(zulipLocalizations.subscribedToNStreams(store.subscriptions.length)),
+
             ])),
           const SizedBox(height: 16),
           ElevatedButton(

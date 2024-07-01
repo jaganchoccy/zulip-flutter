@@ -83,7 +83,13 @@ class _MessageListPageState extends State<MessageListPage> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: MessageListAppBarTitle(narrow: widget.narrow),
+      appBar: AppBar(
+          actions: [Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Image.asset('assets/bangle/icon.png'),
+      )],
+
+        title: MessageListAppBarTitle(narrow: widget.narrow),
         backgroundColor: appBarBackgroundColor,
         shape: removeAppBarBottomBorder
           ? const Border()

@@ -157,6 +157,11 @@ class _LightboxPageLayoutState extends State<_LightboxPageLayout> {
         backgroundColor: appBarBackgroundColor,
         shape: const Border(), // Remove bottom border from [AppBarTheme]
         elevation: appBarElevation,
+          actions: [Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Image.asset('assets/bangle/icon.png'),
+      )],
+
 
         // TODO(#41): Show message author's avatar
         title: RichText(

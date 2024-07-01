@@ -82,7 +82,11 @@ class _SubscriptionListPageState extends State<SubscriptionListPage> with PerAcc
     unpinned.sortBy((subscription) => subscription.name.toLowerCase());
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Channels")),
+      appBar: AppBar(title: const Text("Channels"),  actions: [Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Image.asset('assets/bangle/icon.png'),
+      )],
+),
       body: SafeArea(
         // Don't pad the bottom here; we want the list content to do that.
         bottom: false,

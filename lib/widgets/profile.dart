@@ -69,7 +69,11 @@ class ProfilePage extends StatelessWidget {
     ];
 
     return Scaffold(
-      appBar: AppBar(title: Text(user.fullName)),
+      appBar: AppBar(title: Text(user.fullName),  actions: [Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Image.asset('assets/bangle/icon.png'),
+      )],
+),
       body: SingleChildScrollView(
         child: Center(
           child: ConstrainedBox(
@@ -88,7 +92,11 @@ class _ProfileErrorPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Error')),
+      appBar: AppBar(title: const Text('Error'),  actions: [Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Image.asset('assets/bangle/icon.png'),
+      )],
+),
       body: const SingleChildScrollView(
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: 16, vertical: 32),

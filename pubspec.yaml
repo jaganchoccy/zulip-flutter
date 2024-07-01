@@ -16,8 +16,8 @@ environment:
   # that by the time we want to release, these will have become stable.
   # TODO: Before general release, switch to stable Flutter and Dart versions,
   #   or pin exact versions: https://github.com/zulip/zulip-flutter/issues/15
-  sdk: '>=3.5.0-308.0.dev <4.0.0'
-  flutter: '>=3.23.0-13.0.pre.363'
+  sdk: '>=3.5.0-138.0.dev <4.0.0'
+  flutter: '>=3.22.0-28.0.pre.10'
 
 # To update dependencies, see instructions in README.md.
 dependencies:
@@ -108,6 +108,7 @@ flutter:
     - assets/Source_Code_Pro/LICENSE.md
     - assets/Source_Sans_3/LICENSE.md
     - assets/bangle/logo.png
+    - assets/bangle/icon.png
 
   fonts:
     # Google's emoji font. (Web uses these emoji for the "Google" emojiset.)

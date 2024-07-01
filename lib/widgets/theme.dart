@@ -68,7 +68,7 @@ ThemeData zulipThemeData(BuildContext context) {
 ///
 /// This is chosen as the sRGB midpoint of the Zulip logo's gradient.
 // As computed by Anders: https://github.com/zulip/zulip-mobile/pull/4467
-const kZulipBrandColor = Color.fromRGBO(0x64, 0x92, 0xfe, 1);
+const kZulipBrandColor = Color.fromRGBO(223, 29, 81, 1);
 
 /// Variables from the Figma design.
 ///
@@ -76,10 +76,10 @@ const kZulipBrandColor = Color.fromRGBO(0x64, 0x92, 0xfe, 1);
 ///   https://www.figma.com/design/1JTNtYo9memgW7vV6d0ygq/Zulip-Mobile?node-id=2945-49492&t=MEb4vtp7S26nntxm-0
 class DesignVariables extends ThemeExtension<DesignVariables> {
   DesignVariables() :
-    bgMain = const Color(0xfff0f0f0),
-    bgTopBar = const Color(0xfff5f5f5),
+    bgMain = const Color.fromARGB(255, 255, 255, 255),
+    bgTopBar = const Color.fromARGB(255, 255, 255, 255),
     borderBar = const Color(0x33000000),
-    icon = const Color(0xff666699),
+    icon = const Color.fromARGB(255, 212, 89, 41),
     title = const Color(0xff1a1a1a),
     streamColorSwatches = StreamColorSwatches.light;
 

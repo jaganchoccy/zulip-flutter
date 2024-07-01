@@ -19,7 +19,7 @@
   "@chooseAccountPageTitle": {
     "description": "Title for ChooseAccountPage"
   },
-  "chooseAccountButtonAddAnAccount": "Add an account",
+  "chooseAccountButtonAddAnAccount": "Start",
   "@chooseAccountButtonAddAnAccount": {
     "description": "Label for ChooseAccountPage button to add an account"
   },
@@ -304,7 +304,7 @@
   "@loginAddAnAccountPageTitle": {
     "description": "Page title for screen to add a Zulip account."
   },
-  "loginServerUrlInputLabel": "Your Zulip server URL",
+  "loginServerUrlInputLabel": "Your Redbangle server URL",
   "@loginServerUrlInputLabel": {
     "description": "Input label in login page for Zulip server URL entry."
   },

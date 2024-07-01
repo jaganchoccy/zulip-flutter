@@ -57,7 +57,11 @@ class _RecentDmConversationsPageState extends State<RecentDmConversationsPage> w
     final zulipLocalizations = ZulipLocalizations.of(context);
     final sorted = model!.sorted;
     return Scaffold(
-      appBar: AppBar(title: Text(zulipLocalizations.recentDmConversationsPageTitle)),
+      appBar: AppBar(title: Text(zulipLocalizations.recentDmConversationsPageTitle),  actions: [Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Image.asset('assets/bangle/icon.png'),
+      )],
+),
       body: SafeArea(
         // Don't pad the bottom here; we want the list content to do that.
         bottom: false,
