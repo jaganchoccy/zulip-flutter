@@ -20,7 +20,7 @@ usage: tools/upgrade [OPTION]... [STEP]...
 
 Upgrade our dependencies.
 
-By default, run all upgrade steps:
+By default, run the following upgrade steps:
   ${default_steps[*]}
 
 Each step produces a Git commit if there were any changes.
@@ -29,6 +29,12 @@ The steps are:
 
   pod         Upgrade CocoaPods pods.
 
+  flutter-local
+              Upgrade Flutter and its supporting libraries.
+              EXPERIMENTAL and not in the default list,
+              because it takes your current locally-installed version
+              rather than finding the latest.
+
   pub         Upgrade pub packages within the constraints expressed
               in pubspec.yaml, then upgrade pods to match.
 
@@ -36,13 +42,21 @@ The steps are:
               then upgrade pods to match.  If there are any changes
               here, the resulting commit is only a draft and requires
               human editing and review.
+
+Options:
+
+  --no-pod    Skip running CocoaPods.  This is convenient for
+              drafting a branch on Linux.
 EOF
 }
 
+opt_pod=y
 opt_steps=()
 while (( $# )); do
     case "$1" in
-        pod|pub|pub-major)
+        --no-pod)
+            opt_pod=; shift;;
+        pod|flutter-local|pub|pub-major)
             opt_steps+=("$1"); shift;;
         --help) usage; exit 0;;
         *) usage >&2; exit 2;;
@@ -60,6 +74,8 @@ rootdir=$(git rev-parse --show-toplevel)
 cd "$rootdir"
 
 check_have_cocoapods() {
+    [ -z "${opt_pod}" ] && return;
+
     if ! type pod >/dev/null; then
         echo >&2 "No \`pod\` command found."
         echo >&2
@@ -100,11 +116,21 @@ check_pub_get_clean() {
 }
 
 just_pod_update() {
+    [ -z "${opt_pod}" ] && return;
+    check_have_cocoapods
+
     run_visibly pod update --project-directory=ios/
     run_visibly pod update --project-directory=macos/
 }
 
 upgrade_pod() {
+    if [ -z "${opt_pod}" ]; then
+        echo >&2
+        echo >&2 "pod update: WARNING: skipping because --no-pod"
+        return
+    fi
+
+    check_have_cocoapods
     check_no_uncommitted_or_untracked
     check_pub_get_clean
 
@@ -119,7 +145,82 @@ deps: Update CocoaPods pods (tools/upgrade pod)
 "
 }
 
+upgrade_flutter_local() {
+    local flutter_version_output versions flutter_version dart_sdk_version
+
+    check_no_uncommitted_or_untracked
+
+    # No check_pub_get_clean.  This operates on a `flutter` you've
+    # already locally upgraded, so if that happens to update any
+    # supporting libraries then it's expected that those will show up
+    # on `flutter pub get`.
+    # check_pub_get_clean
+
+    # TODO upgrade Flutter to latest, rather than what's lying around
+
+    flutter_version_output=$(run_visibly flutter --version)
+    # shellcheck disable=SC2207 # output has controlled whitespace
+    versions=( $(echo -n "${flutter_version_output}" | perl -0ne '
+      # Sometimes the `flutter --version` output begins with lines like
+      # "Resolving dependencies..."; so the pattern accommodates those.
+      # And the pattern requires Dart 3.x, because we emit "<4.0.0" below.
+      if (/^Flutter (\S+) .*\sDart \S+ \(build (3\.\S+)\)/ms) {
+        print "$1 $2";
+      }
+    ') )
+    if (( !"${#versions[@]}" )); then
+        echo >&2 "error: 'flutter --version' output not recognized"
+        printf >&2 "output was:\n-----\n%s\n-----" "${flutter_version_output}"
+        return 1
+    fi
+    flutter_version="${versions[0]}"
+    dart_sdk_version="${versions[1]}"
+
+    yaml_fragment="\
+  sdk: '>=${dart_sdk_version} <4.0.0'
+  flutter: '>=${flutter_version}'
+" \
+      perl -i -0pe 's/^  sdk: .*\n  flutter: .*\n/$ENV{yaml_fragment}/m' \
+        pubspec.yaml
+
+    if no_uncommitted_changes; then
+        echo >&2 "flutter: No changes."
+        return
+    fi
+
+    run_visibly flutter pub get
+
+    local libraries_updated=
+    if git diff pubspec.lock | perl -0ne '
+            s/.*?\n(@@)/$1/s;  # cut `git diff` header
+            if (/^[-+](?!  (dart|flutter):)/m) { exit 0; } else { exit 1; }
+          '; then
+        libraries_updated=y
+    fi
+
+    local more="
+
+And update Flutter's supporting libraries to match."
+    git commit -a -m "\
+deps: Upgrade Flutter to ${flutter_version}${libraries_updated:+"${more}"}
+"
+
+    cat <<EOF
+
+There was a Flutter upgrade${libraries_updated:+, and libraries were updated}.
+
+The \`tools/upgrade\` script created a draft commit, but
+it requires manual checking:
+
+ * The update was to the Flutter version you currently
+   have installed at the \`flutter\` command.
+   Check that that is the latest Flutter from main,
+   or otherwise the version you intend to upgrade to.
+EOF
+}
+
 upgrade_pub() {
+    check_have_cocoapods
     check_no_uncommitted_or_untracked
     check_pub_get_clean
 
@@ -144,9 +245,15 @@ upgrade_pub() {
     git commit -a -m "\
 deps: Upgrade packages within constraints (tools/upgrade pub)
 "
+
+    if [ -z "${opt_pod}" ]; then
+        echo >&2
+        echo >&2 "flutter pub upgrade: WARNING: Podfile.lock files may be out of date because --no-pod"
+    fi
 }
 
 upgrade_pub_major() {
+    check_have_cocoapods
     check_no_uncommitted_or_untracked
     check_pub_get_clean
 
@@ -171,6 +278,7 @@ Changelogs:
 "
 
     cat <<EOF
+
 There were upgrades beyond the constraints we had in \`pubspec.yaml\`.
 This typically means the package maintainers identified the changes
 as potentially breaking.
@@ -190,9 +298,12 @@ To finish the upgrade:
 If several unrelated packages were upgraded, and any of them require
 changes in our code, consider upgrading them in separate commits.
 EOF
-}
 
-check_have_cocoapods
+    if [ -z "${opt_pod}" ]; then
+        echo >&2
+        echo >&2 "flutter pub upgrade --major-versions: WARNING: Podfile.lock files may be out of date because --no-pod"
+    fi
+}
 
 divider_line='================================================================'
 
@@ -202,6 +313,7 @@ for step in "${opt_steps[@]}"; do
     echo "======== tools/upgrade ${step}"
     case "${step}" in
         pod)       upgrade_pod ;;
+        flutter-local) upgrade_flutter_local ;;
         pub)       upgrade_pub ;;
         pub-major) upgrade_pub_major ;;
         *)   echo >&2 "Internal error: unknown step ${step}" ;;

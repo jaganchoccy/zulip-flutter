@@ -395,7 +395,6 @@ UpdateMessageEvent updateMessageEditEvent(
   int? messageId,
   List<MessageFlag>? flags,
   int? editTimestamp,
-  String? streamName,
   String? renderedContent,
   bool isMeMessage = false,
 }) {
@@ -408,12 +407,11 @@ UpdateMessageEvent updateMessageEditEvent(
     messageIds: [messageId],
     flags: flags ?? origMessage.flags,
     editTimestamp: editTimestamp ?? 1234567890, // TODO generate timestamp
-    streamName: streamName,
-    streamId: origMessage is StreamMessage ? origMessage.streamId : null,
+    origStreamId: origMessage is StreamMessage ? origMessage.streamId : null,
     newStreamId: null,
     propagateMode: null,
-    origSubject: null,
-    subject: null,
+    origTopic: null,
+    newTopic: null,
     origContent: 'some probably-mismatched old Markdown',
     origRenderedContent: origMessage.content,
     content: 'some probably-mismatched new Markdown',
@@ -441,7 +439,7 @@ UpdateMessageFlagsRemoveEvent updateMessageFlagsRemoveEvent(
             type: MessageType.stream,
             mentioned: mentioned,
             streamId: message.streamId,
-            topic: message.subject,
+            topic: message.topic,
             userIds: null,
           ),
           DmMessage() => UpdateMessageFlagsMessageDetail(

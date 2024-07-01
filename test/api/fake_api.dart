@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:zulip/api/core.dart';
 import 'package:zulip/model/store.dart';
@@ -7,19 +8,22 @@ import 'package:zulip/model/store.dart';
 import '../example_data.dart' as eg;
 
 sealed class _PreparedResponse {
+  final Duration delay;
+
+  _PreparedResponse({this.delay = Duration.zero});
 }
 
 class _PreparedException extends _PreparedResponse {
   final Object exception;
 
-  _PreparedException({required this.exception});
+  _PreparedException({super.delay, required this.exception});
 }
 
 class _PreparedSuccess extends _PreparedResponse {
   final int httpStatus;
   final List<int> bytes;
 
-  _PreparedSuccess({required this.httpStatus, required this.bytes});
+  _PreparedSuccess({super.delay, required this.httpStatus, required this.bytes});
 }
 
 /// An [http.Client] that accepts and replays canned responses, for testing.
@@ -52,12 +56,13 @@ class FakeHttpClient extends http.BaseClient {
     int? httpStatus,
     Map<String, dynamic>? json,
     String? body,
+    Duration delay = Duration.zero,
   }) {
     assert(_nextResponse == null,
       'FakeApiConnection.prepare was called while already expecting a request');
     if (exception != null) {
       assert(httpStatus == null && json == null && body == null);
-      _nextResponse = _PreparedException(exception: exception);
+      _nextResponse = _PreparedException(exception: exception, delay: delay);
     } else {
       assert((json == null) || (body == null));
       final String resolvedBody = switch ((body, json)) {
@@ -68,6 +73,7 @@ class FakeHttpClient extends http.BaseClient {
       _nextResponse = _PreparedSuccess(
         httpStatus: httpStatus ?? 200,
         bytes: utf8.encode(resolvedBody),
+        delay: delay,
       );
     }
   }
@@ -75,16 +81,29 @@ class FakeHttpClient extends http.BaseClient {
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) {
     lastRequest = request;
+
+    if (_nextResponse == null) {
+      throw FlutterError.fromParts([
+        ErrorSummary(
+          'An API request was attempted in a test when no response was prepared.'),
+        ErrorDescription(
+          'Each API request in a test context must be preceded by a corresponding '
+          'call to [FakeApiConnection.prepare].'),
+      ]);
+    }
     final response = _nextResponse!;
     _nextResponse = null;
+
+    final http.StreamedResponse Function() computation;
     switch (response) {
       case _PreparedException(:var exception):
-        return Future(() => throw exception);
+        computation = () => throw exception;
       case _PreparedSuccess(:var bytes, :var httpStatus):
         final byteStream = http.ByteStream.fromBytes(bytes);
-        return Future(() => http.StreamedResponse(
-          byteStream, httpStatus, request: request));
+        computation = () => http.StreamedResponse(
+          byteStream, httpStatus, request: request);
     }
+    return Future.delayed(response.delay, computation);
   }
 }
 
@@ -191,13 +210,20 @@ class FakeApiConnection extends ApiConnection {
   ///
   /// If `exception` is non-null, then `httpStatus`, `body`, and `json` must
   /// all be null, and the next request will throw the given exception.
+  ///
+  /// In either case, the next request will complete a duration of `delay`
+  /// after being started.
   void prepare({
     Object? exception,
     int? httpStatus,
     Map<String, dynamic>? json,
     String? body,
+    Duration delay = Duration.zero,
   }) {
     client.prepare(
-      exception: exception, httpStatus: httpStatus, json: json, body: body);
+      exception: exception,
+      httpStatus: httpStatus, json: json, body: body,
+      delay: delay,
+    );
   }
 }

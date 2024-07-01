@@ -125,23 +125,11 @@ class AutocompleteViewManager {
     assert(removed);
   }
 
-  void handleRealmUserAddEvent(RealmUserAddEvent event) {
-    for (final view in _mentionAutocompleteViews) {
-      view.refreshStaleUserResults();
-    }
-  }
-
   void handleRealmUserRemoveEvent(RealmUserRemoveEvent event) {
-    for (final view in _mentionAutocompleteViews) {
-      view.refreshStaleUserResults();
-    }
     autocompleteDataCache.invalidateUser(event.userId);
   }
 
   void handleRealmUserUpdateEvent(RealmUserUpdateEvent event) {
-    for (final view in _mentionAutocompleteViews) {
-      view.refreshStaleUserResults();
-    }
     autocompleteDataCache.invalidateUser(event.userId);
   }
 
@@ -176,15 +164,52 @@ class AutocompleteViewManager {
 ///  * When the object will no longer be used, call [dispose] to free
 ///    resources on the [PerAccountStore].
 class MentionAutocompleteView extends ChangeNotifier {
-  MentionAutocompleteView._({required this.store, required this.narrow});
+  MentionAutocompleteView._({
+    required this.store,
+    required this.narrow,
+    required this.sortedUsers,
+  });
 
   factory MentionAutocompleteView.init({
     required PerAccountStore store,
     required Narrow narrow,
   }) {
-    final view = MentionAutocompleteView._(store: store, narrow: narrow);
+    final view = MentionAutocompleteView._(
+      store: store,
+      narrow: narrow,
+      sortedUsers: _usersByRelevance(store: store, narrow: narrow),
+    );
     store.autocompleteViewManager.registerMentionAutocomplete(view);
     return view;
+  }
+
+  static List<User> _usersByRelevance({
+    required PerAccountStore store,
+    required Narrow narrow,
+  }) {
+    assert(narrow is! CombinedFeedNarrow);
+    return store.users.values.toList()
+      ..sort((userA, userB) => compareByDms(userA, userB, store: store));
+  }
+
+  /// Determines which of the two users is more recent in DM conversations.
+  ///
+  /// Returns a negative number if [userA] is more recent than [userB],
+  /// returns a positive number if [userB] is more recent than [userA],
+  /// and returns `0` if both [userA] and [userB] are equally recent
+  /// or there is no DM exchanged with them whatsoever.
+  @visibleForTesting
+  static int compareByDms(User userA, User userB, {required PerAccountStore store}) {
+    final recentDms = store.recentDmConversationsView;
+    final aLatestMessageId = recentDms.latestMessagesByRecipient[userA.userId];
+    final bLatestMessageId = recentDms.latestMessagesByRecipient[userB.userId];
+
+    return switch((aLatestMessageId, bLatestMessageId)) {
+      (int a, int b) => -a.compareTo(b),
+      (int(),     _) => -1,
+      (_,     int()) => 1,
+      _              => 0,
+    };
   }
 
   @override
@@ -198,6 +223,7 @@ class MentionAutocompleteView extends ChangeNotifier {
 
   final PerAccountStore store;
   final Narrow narrow;
+  final List<User> sortedUsers;
 
   MentionAutocompleteQuery? get query => _query;
   MentionAutocompleteQuery? _query;
@@ -205,15 +231,6 @@ class MentionAutocompleteView extends ChangeNotifier {
     _query = query;
     if (query != null) {
       _startSearch(query);
-    }
-  }
-
-  /// Recompute user results for the current query, if any.
-  ///
-  /// Called in particular when we get a [RealmUserEvent].
-  void refreshStaleUserResults() {
-    if (_query != null) {
-      _startSearch(_query!);
     }
   }
 
@@ -230,18 +247,7 @@ class MentionAutocompleteView extends ChangeNotifier {
   List<MentionAutocompleteResult> _results = [];
 
   Future<void> _startSearch(MentionAutocompleteQuery query) async {
-    List<MentionAutocompleteResult>? newResults;
-
-    while (true) {
-      try {
-        newResults = await _computeResults(query);
-        break;
-      } on ConcurrentModificationError {
-        // Retry
-        // TODO backoff?
-      }
-    }
-
+    final newResults = await _computeResults(query);
     if (newResults == null) {
       // Query was old; new search is in progress. Or, no listeners to notify.
       return;
@@ -253,9 +259,7 @@ class MentionAutocompleteView extends ChangeNotifier {
 
   Future<List<MentionAutocompleteResult>?> _computeResults(MentionAutocompleteQuery query) async {
     final List<MentionAutocompleteResult> results = [];
-    final Iterable<User> users = store.users.values;
-
-    final iterator = users.iterator;
+    final iterator = sortedUsers.iterator;
     bool isDone = false;
     while (!isDone) {
       // CPU perf: End this task; enqueue a new one for resuming this work
@@ -266,7 +270,7 @@ class MentionAutocompleteView extends ChangeNotifier {
       }
 
       for (int i = 0; i < 1000; i++) {
-        if (!iterator.moveNext()) { // Can throw ConcurrentModificationError
+        if (!iterator.moveNext()) {
           isDone = true;
           break;
         }
@@ -277,7 +281,7 @@ class MentionAutocompleteView extends ChangeNotifier {
         }
       }
     }
-    return results; // TODO(#228) sort for most relevant first
+    return results;
   }
 }
 

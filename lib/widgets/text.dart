@@ -12,12 +12,13 @@ import 'package:flutter/material.dart';
 /// an [AppBar]'s title, of an [ElevatedButton]'s label, and so on.
 ///
 /// As of writing, it turns out that these styles also flow naturally into
-/// most of our own widgets' text styles.
+/// many of our own widgets' text styles.
 /// We often see this in the child of a [Material], for example,
 /// since by default [Material] applies an [AnimatedDefaultTextStyle]
 /// with the [TextTheme.bodyMedium] that gets its value from here.
-/// A notable exception is the base style for message content.
-/// That style is self-contained and is not meant to inherit from this;
+/// There are exceptions, having `inherit: false`, that are self-contained
+/// and not meant to inherit from this.
+/// For example, the base style for message content;
 /// see [ContentTheme.textStylePlainParagraph].
 ///
 /// Applies [kDefaultFontFamily] and [kDefaultFontFamilyFallback],
@@ -372,4 +373,25 @@ double proportionalLetterSpacing(
 }) {
   final effectiveTextScaler = textScaler ?? MediaQuery.textScalerOf(context);
   return effectiveTextScaler.scale(baseFontSize) * proportion;
+}
+
+/// The most suitable [TextBaseline] for the current language.
+///
+/// The result is chosen based on information from [MaterialLocalizations]
+/// about the language's script.
+/// If [MaterialLocalizations] doesn't have that information,
+/// gives [TextBaseline.alphabetic].
+// Adapted from [Theme.of], which localizes text styles according to the
+// locale's [ScriptCategory]. With M3 defaults, this just means varying
+// [TextStyle.textBaseline] the way we do here.
+TextBaseline localizedTextBaseline(BuildContext context) {
+  final materialLocalizations =
+    Localizations.of<MaterialLocalizations>(context, MaterialLocalizations);
+  final scriptCategory = materialLocalizations?.scriptCategory
+    ?? ScriptCategory.englishLike;
+  return switch (scriptCategory) {
+    ScriptCategory.dense => TextBaseline.ideographic,
+    ScriptCategory.englishLike => TextBaseline.alphabetic,
+    ScriptCategory.tall => TextBaseline.alphabetic,
+  };
 }

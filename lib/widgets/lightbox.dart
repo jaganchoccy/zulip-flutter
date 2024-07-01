@@ -248,6 +248,31 @@ class _ImageLightboxPageState extends State<_ImageLightboxPage> {
   }
 }
 
+class VideoDurationLabel extends StatelessWidget {
+  const VideoDurationLabel(this.duration, {
+    super.key,
+    this.semanticsLabel,
+  });
+
+  final Duration duration;
+  final String? semanticsLabel;
+
+  @visibleForTesting
+  static String formatDuration(Duration value) {
+    final hours = value.inHours.toString().padLeft(2, '0');
+    final minutes = value.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds = value.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '${hours == '00' ? '' : '$hours:'}$minutes:$seconds';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(formatDuration(duration),
+      semanticsLabel: semanticsLabel,
+      style: const TextStyle(color: Colors.white));
+  }
+}
+
 class _VideoPositionSliderControl extends StatefulWidget {
   final VideoPlayerController controller;
 
@@ -277,27 +302,7 @@ class _VideoPositionSliderControlState extends State<_VideoPositionSliderControl
   }
 
   void _handleVideoControllerUpdate() {
-    setState(() {
-      // After 'controller.seekTo' is called in 'Slider.onChangeEnd' the
-      // position indicator switches back to the actual controller's position
-      // but since the call 'seekTo' completes before the actual controller
-      // updates are notified, the position indicator that switches to controller's
-      // position can show the older position before the call to 'seekTo' for a
-      // single frame, resulting in a glichty UX.
-      //
-      // To avoid that, we delay the position indicator switch from '_sliderValue' to
-      // happen when we are notified of the controller update.
-      if (_isSliderDragging && _sliderValue == widget.controller.value.position) {
-        _isSliderDragging = false;
-      }
-    });
-  }
-
-  static String _formatDuration(Duration value) {
-    final hours = value.inHours.toString().padLeft(2, '0');
-    final minutes = value.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final seconds = value.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return '${hours == '00' ? '' : '$hours:'}$minutes:$seconds';
+    setState(() {});
   }
 
   @override
@@ -307,8 +312,8 @@ class _VideoPositionSliderControlState extends State<_VideoPositionSliderControl
       : widget.controller.value.position;
 
     return Row(children: [
-      Text(_formatDuration(currentPosition),
-        style: const TextStyle(color: Colors.white)),
+      VideoDurationLabel(currentPosition,
+        semanticsLabel: "Current position"),
       Expanded(
         child: Slider(
           value: currentPosition.inMilliseconds.toDouble(),
@@ -325,20 +330,20 @@ class _VideoPositionSliderControlState extends State<_VideoPositionSliderControl
               _sliderValue = Duration(milliseconds: value.toInt());
             });
           },
-          onChangeEnd: (value) {
+          onChangeEnd: (value) async {
             final durationValue = Duration(milliseconds: value.toInt());
-            setState(() {
-              _sliderValue = durationValue;
-            });
-            widget.controller.seekTo(durationValue);
-
-            // The toggling back of '_isSliderDragging' is omitted here intentionally,
-            // see '_handleVideoControllerUpdates'.
+            await widget.controller.seekTo(durationValue);
+            if (mounted) {
+              setState(() {
+                _sliderValue = durationValue;
+                _isSliderDragging = false;
+              });
+            }
           },
         ),
       ),
-      Text(_formatDuration(widget.controller.value.duration),
-        style: const TextStyle(color: Colors.white)),
+      VideoDurationLabel(widget.controller.value.duration,
+        semanticsLabel: "Video duration"),
     ]);
   }
 }

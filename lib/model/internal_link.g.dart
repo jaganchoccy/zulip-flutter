@@ -11,8 +11,10 @@ part of 'internal_link.dart';
 const _$_NarrowOperatorEnumMap = {
   _NarrowOperator.dm: 'dm',
   _NarrowOperator.near: 'near',
+  _NarrowOperator.with_: 'with',
   _NarrowOperator.pmWith: 'pm-with',
   _NarrowOperator.stream: 'stream',
+  _NarrowOperator.channel: 'channel',
   _NarrowOperator.subject: 'subject',
   _NarrowOperator.topic: 'topic',
   _NarrowOperator.unknown: 'unknown',

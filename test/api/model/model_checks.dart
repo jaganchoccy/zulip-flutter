@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:checks/checks.dart';
 import 'package:zulip/api/model/model.dart';
 
@@ -29,23 +27,25 @@ extension ZulipStreamChecks on Subject<ZulipStream> {
   Subject<int?> get canRemoveSubscribersGroup => has((e) => e.canRemoveSubscribersGroup, 'canRemoveSubscribersGroup');
 }
 
-extension StreamColorSwatchChecks on Subject<StreamColorSwatch> {
-  Subject<Color> get base => has((s) => s.base, 'base');
-  Subject<Color> get unreadCountBadgeBackground => has((s) => s.unreadCountBadgeBackground, 'unreadCountBadgeBackground');
-  Subject<Color> get iconOnPlainBackground => has((s) => s.iconOnPlainBackground, 'iconOnPlainBackground');
-  Subject<Color> get iconOnBarBackground => has((s) => s.iconOnBarBackground, 'iconOnBarBackground');
-  Subject<Color> get barBackground => has((s) => s.barBackground, 'barBackground');
-}
-
 extension MessageChecks on Subject<Message> {
-  Subject<int> get id => has((e) => e.id, 'id');
+  Subject<String> get client => has((e) => e.client, 'client');
   Subject<String> get content => has((e) => e.content, 'content');
+  Subject<String> get contentType => has((e) => e.contentType, 'contentType');
+  Subject<int> get id => has((e) => e.id, 'id');
   Subject<bool> get isMeMessage => has((e) => e.isMeMessage, 'isMeMessage');
   Subject<int?> get lastEditTimestamp => has((e) => e.lastEditTimestamp, 'lastEditTimestamp');
   Subject<Reactions?> get reactions => has((e) => e.reactions, 'reactions');
+  Subject<int> get recipientId => has((e) => e.recipientId, 'recipientId');
+  Subject<String> get senderEmail => has((e) => e.senderEmail, 'senderEmail');
+  Subject<String> get senderFullName => has((e) => e.senderFullName, 'senderFullName');
+  Subject<int> get senderId => has((e) => e.senderId, 'senderId');
+  Subject<String> get senderRealmStr => has((e) => e.senderRealmStr, 'senderRealmStr');
+  Subject<String> get topic => has((e) => e.topic, 'topic');
+  Subject<int> get timestamp => has((e) => e.timestamp, 'timestamp');
+  Subject<String> get type => has((e) => e.type, 'type');
   Subject<List<MessageFlag>> get flags => has((e) => e.flags, 'flags');
-
-  // TODO accessors for other fields
+  Subject<String?> get matchContent => has((e) => e.matchContent, 'matchContent');
+  Subject<String?> get matchTopic => has((e) => e.matchTopic, 'matchTopic');
 }
 
 extension ReactionsChecks on Subject<Reactions> {

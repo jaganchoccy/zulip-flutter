@@ -19,6 +19,7 @@ import 'package:zulip/widgets/content.dart';
 import 'package:zulip/widgets/icons.dart';
 import 'package:zulip/widgets/message_list.dart';
 import 'package:zulip/widgets/store.dart';
+import 'package:zulip/widgets/stream_colors.dart';
 import 'package:zulip/widgets/theme.dart';
 
 import '../api/fake_api.dart';
@@ -85,6 +86,22 @@ void main() {
     final scrollView = tester.widget<CustomScrollView>(find.byType(CustomScrollView));
     return scrollView.controller;
   }
+
+  group('presents message content appropriately', () {
+    // regression test for https://github.com/zulip/zulip-flutter/issues/736
+    testWidgets('content in "Combined feed" not asked to consume insets (including bottom)', (tester) async {
+      const fakePadding = FakeViewPadding(left: 10, top: 10, right: 10, bottom: 10);
+      tester.view.viewInsets = fakePadding;
+      tester.view.padding = fakePadding;
+
+      await setupMessageListPage(tester, narrow: const CombinedFeedNarrow(),
+        messages: [eg.streamMessage(content: ContentExample.codeBlockPlain.html)]);
+
+      final element = tester.element(find.byType(CodeBlock));
+      final padding = MediaQuery.of(element).padding;
+      check(padding).equals(EdgeInsets.zero);
+    });
+  });
 
   group('fetch older messages on scroll', () {
     int? itemCount(WidgetTester tester) =>
@@ -277,7 +294,7 @@ void main() {
 
       testWidgets('color of recipient header background', (tester) async {
         final subscription = eg.subscription(stream, color: Colors.red.value);
-        final swatch = subscription.colorSwatch();
+        final swatch = StreamColorSwatch.light(subscription.color);
         await setupMessageListPage(tester,
           messages: [eg.streamMessage(stream: subscription)],
           subscriptions: [subscription]);
@@ -292,7 +309,7 @@ void main() {
       testWidgets('color of stream icon', (tester) async {
         final stream = eg.stream(isWebPublic: true);
         final subscription = eg.subscription(stream, color: Colors.red.value);
-        final swatch = subscription.colorSwatch();
+        final swatch = StreamColorSwatch.light(subscription.color);
         await setupMessageListPage(tester,
           messages: [eg.streamMessage(stream: subscription)],
           subscriptions: [subscription]);
@@ -689,7 +706,7 @@ void main() {
     testWidgets('from unread to read', (WidgetTester tester) async {
       final message = eg.streamMessage(flags: []);
       final unreadMsgs = eg.unreadMsgs(streams:[
-        UnreadStreamSnapshot(topic: message.subject, streamId: message.streamId, unreadMessageIds: [message.id])
+        UnreadStreamSnapshot(topic: message.topic, streamId: message.streamId, unreadMessageIds: [message.id])
       ]);
       await setupMessageListPage(tester, messages: [message], unreadMsgs: unreadMsgs);
       check(isMarkAsReadButtonVisible(tester)).isTrue();
@@ -707,7 +724,7 @@ void main() {
     testWidgets("messages don't shift position", (WidgetTester tester) async {
       final message = eg.streamMessage(flags: []);
       final unreadMsgs = eg.unreadMsgs(streams:[
-        UnreadStreamSnapshot(topic: message.subject, streamId: message.streamId,
+        UnreadStreamSnapshot(topic: message.topic, streamId: message.streamId,
           unreadMessageIds: [message.id])
       ]);
       await setupMessageListPage(tester,
@@ -732,7 +749,7 @@ void main() {
     group('onPressed behavior', () {
       final message = eg.streamMessage(flags: []);
       final unreadMsgs = eg.unreadMsgs(streams: [
-        UnreadStreamSnapshot(streamId: message.streamId, topic: message.subject,
+        UnreadStreamSnapshot(streamId: message.streamId, topic: message.topic,
           unreadMessageIds: [message.id]),
       ]);
 
@@ -988,7 +1005,7 @@ void main() {
         await tester.pumpAndSettle();
         checkErrorDialog(tester,
           expectedTitle: zulipLocalizations.errorMarkAsReadFailedTitle,
-          expectedMessage: 'Oops');
+          expectedMessage: 'NetworkException: Oops (ClientException: Oops)');
       });
     });
   });

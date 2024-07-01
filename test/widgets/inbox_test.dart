@@ -4,9 +4,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:zulip/api/model/events.dart';
 import 'package:zulip/api/model/model.dart';
 import 'package:zulip/model/store.dart';
+import 'package:zulip/widgets/app.dart';
 import 'package:zulip/widgets/icons.dart';
 import 'package:zulip/widgets/inbox.dart';
-import 'package:zulip/widgets/store.dart';
+import 'package:zulip/widgets/stream_colors.dart';
 
 import '../example_data.dart' as eg;
 import '../flutter_checks.dart';
@@ -71,12 +72,10 @@ void main() {
     }
 
     await tester.pumpWidget(
-      GlobalStoreWidget(
-        child: MaterialApp(
-          navigatorObservers: [if (navigatorObserver != null) navigatorObserver],
-          home: PerAccountStoreWidget(
-            accountId: eg.selfAccount.id,
-            child: const InboxPage()))));
+      ZulipApp(navigatorObservers: [if (navigatorObserver != null) navigatorObserver]));
+    await tester.pump();
+    final navigator = await ZulipApp.navigator;
+    navigator.push(InboxPage.buildRoute(accountId: eg.selfAccount.id));
 
     // global store and per-account store get loaded
     await tester.pumpAndSettle();
@@ -92,9 +91,9 @@ void main() {
   }
 
   /// Set up an inbox view with lots of interesting content.
-  Future<void> setupVarious(WidgetTester tester) async {
+  Future<void> setupVarious(WidgetTester tester, {int? sub1Color}) async {
     final stream1 = eg.stream(streamId: 1, name: 'stream 1');
-    final sub1 = eg.subscription(stream1);
+    final sub1 = eg.subscription(stream1, color: sub1Color);
     final stream2 = eg.stream(streamId: 2, name: 'stream 2');
     final sub2 = eg.subscription(stream2);
 
@@ -129,23 +128,35 @@ void main() {
         matching: find.byType(Row)));
   }
 
-  /// Find an all-DMs header element.
-  // Why "an" all-DMs header element? Because there might be two: one that
-  // floats at the top of the screen to give the "sticky header" effect, and one
-  // that scrolls normally, the way it would in a regular [ListView].
-  // TODO we'll need to find both and run checks on them, knowing which is which.
+  /// Find the all-DMs header element.
   Widget? findAllDmsHeaderRow(WidgetTester tester) {
     return findRowByLabel(tester, 'Direct messages');
   }
 
-  /// For the given stream ID, find a stream header element.
-  // Why "an" all-DMs header element? Because there might be two: one that
-  // floats at the top of the screen to give the "sticky header" effect, and one
-  // that scrolls normally, the way it would in a regular [ListView].
-  // TODO we'll need to find both and run checks on them, knowing which is which.
+  Color? allDmsHeaderBackgroundColor(WidgetTester tester) {
+    final row = findAllDmsHeaderRow(tester);
+    check(row).isNotNull();
+    final material = tester.firstWidget<Material>(
+      find.ancestor(
+        of: find.byWidget(row!),
+        matching: find.byType(Material)));
+    return material.color;
+  }
+
+  /// For the given stream ID, find the stream header element.
   Widget? findStreamHeaderRow(WidgetTester tester, int streamId) {
     final stream = store.streams[streamId]!;
     return findRowByLabel(tester, stream.name);
+  }
+
+  Color? streamHeaderBackgroundColor(WidgetTester tester, int streamId) {
+    final row = findStreamHeaderRow(tester, streamId);
+    check(row).isNotNull();
+    final material = tester.firstWidget<Material>(
+      find.ancestor(
+        of: find.byWidget(row!),
+        matching: find.byType(Material)));
+    return material.color;
   }
 
   IconData expectedStreamHeaderIcon(int streamId) {
@@ -318,7 +329,8 @@ void main() {
           check(headerRow).isNotNull();
           final icon = findHeaderCollapseIcon(tester, headerRow!);
           check(icon).icon.equals(ZulipIcons.arrow_down);
-          // TODO check bar background color
+          check(allDmsHeaderBackgroundColor(tester))
+            .isNotNull().equals(const HSLColor.fromAHSL(1, 46, 0.35, 0.93).toColor());
           check(tester.widgetList(findSectionContent)).isNotEmpty();
         }
 
@@ -335,7 +347,8 @@ void main() {
           check(headerRow).isNotNull();
           final icon = findHeaderCollapseIcon(tester, headerRow!);
           check(icon).icon.equals(ZulipIcons.arrow_right);
-          // TODO check bar background color
+          check(allDmsHeaderBackgroundColor(tester))
+            .isNotNull().equals(Colors.white);
           check(tester.widgetList(findSectionContent)).isEmpty();
         }
 
@@ -410,8 +423,10 @@ void main() {
           final collapseIcon = findHeaderCollapseIcon(tester, headerRow!);
           check(collapseIcon).icon.equals(ZulipIcons.arrow_down);
           final streamIcon = findStreamHeaderIcon(tester, streamId);
-          check(streamIcon).color.equals(subscription.colorSwatch().iconOnBarBackground);
-          // TODO check bar background color
+          check(streamIcon).color.equals(
+            StreamColorSwatch.light(subscription.color).iconOnBarBackground);
+          check(streamHeaderBackgroundColor(tester, streamId))
+            .isNotNull().equals(StreamColorSwatch.light(subscription.color).barBackground);
           check(tester.widgetList(findSectionContent)).isNotEmpty();
         }
 
@@ -431,8 +446,10 @@ void main() {
           final collapseIcon = findHeaderCollapseIcon(tester, headerRow!);
           check(collapseIcon).icon.equals(ZulipIcons.arrow_right);
           final streamIcon = findStreamHeaderIcon(tester, streamId);
-          check(streamIcon).color.equals(subscription.colorSwatch().iconOnPlainBackground);
-          // TODO check bar background color
+          check(streamIcon).color.equals(
+            StreamColorSwatch.light(subscription.color).iconOnPlainBackground);
+          check(streamHeaderBackgroundColor(tester, streamId))
+            .isNotNull().equals(Colors.white);
           check(tester.widgetList(findSectionContent)).isEmpty();
         }
 
@@ -449,6 +466,29 @@ void main() {
           checkAppearsCollapsed(tester, 1, findSectionContent);
           await tapCollapseIcon(tester, 1);
           checkAppearsUncollapsed(tester, 1, findSectionContent);
+        });
+
+        testWidgets('uncollapsed header changes background color when [subscription.color] changes', (tester) async {
+          final initialColor = Colors.indigo.value;
+
+          final stream = eg.stream(streamId: 1);
+          await setupPage(tester,
+            streams: [stream],
+            subscriptions: [eg.subscription(stream, color: initialColor)],
+            unreadMessages: [eg.streamMessage(stream: stream, topic: 'specific topic', flags: [])]);
+
+          checkAppearsUncollapsed(tester, stream.streamId, find.text('specific topic'));
+
+          check(streamHeaderBackgroundColor(tester, 1))
+            .equals(StreamColorSwatch.light(initialColor).barBackground);
+
+          final newColor = Colors.orange.value;
+          store.handleEvent(SubscriptionUpdateEvent(id: 1, streamId: 1,
+            property: SubscriptionProperty.color, value: newColor));
+          await tester.pump();
+
+          check(streamHeaderBackgroundColor(tester, 1))
+            .equals(StreamColorSwatch.light(newColor).barBackground);
         });
 
         testWidgets('collapse stream section when partially offscreen: '

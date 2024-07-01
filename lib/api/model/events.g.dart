@@ -363,13 +363,12 @@ UpdateMessageEvent _$UpdateMessageEventFromJson(Map<String, dynamic> json) =>
           .map((e) => $enumDecode(_$MessageFlagEnumMap, e))
           .toList(),
       editTimestamp: (json['edit_timestamp'] as num?)?.toInt(),
-      streamName: json['stream_name'] as String?,
-      streamId: (json['stream_id'] as num?)?.toInt(),
+      origStreamId: (json['stream_id'] as num?)?.toInt(),
       newStreamId: (json['new_stream_id'] as num?)?.toInt(),
       propagateMode:
           $enumDecodeNullable(_$PropagateModeEnumMap, json['propagate_mode']),
-      origSubject: json['orig_subject'] as String?,
-      subject: json['subject'] as String?,
+      origTopic: json['orig_subject'] as String?,
+      newTopic: json['subject'] as String?,
       origContent: json['orig_content'] as String?,
       origRenderedContent: json['orig_rendered_content'] as String?,
       content: json['content'] as String?,
@@ -380,18 +379,18 @@ UpdateMessageEvent _$UpdateMessageEventFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$UpdateMessageEventToJson(UpdateMessageEvent instance) =>
     <String, dynamic>{
       'id': instance.id,
+      'type': instance.type,
       'user_id': instance.userId,
       'rendering_only': instance.renderingOnly,
       'message_id': instance.messageId,
       'message_ids': instance.messageIds,
       'flags': instance.flags,
       'edit_timestamp': instance.editTimestamp,
-      'stream_name': instance.streamName,
-      'stream_id': instance.streamId,
+      'stream_id': instance.origStreamId,
       'new_stream_id': instance.newStreamId,
       'propagate_mode': _$PropagateModeEnumMap[instance.propagateMode],
-      'orig_subject': instance.origSubject,
-      'subject': instance.subject,
+      'orig_subject': instance.origTopic,
+      'subject': instance.newTopic,
       'orig_content': instance.origContent,
       'orig_rendered_content': instance.origRenderedContent,
       'content': instance.content,
@@ -430,6 +429,7 @@ DeleteMessageEvent _$DeleteMessageEventFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$DeleteMessageEventToJson(DeleteMessageEvent instance) =>
     <String, dynamic>{
       'id': instance.id,
+      'type': instance.type,
       'message_ids': instance.messageIds,
       'message_type': _$MessageTypeEnumMap[instance.messageType]!,
       'stream_id': instance.streamId,

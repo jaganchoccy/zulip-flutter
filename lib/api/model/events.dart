@@ -584,8 +584,8 @@ class MessageEvent extends Event {
   //
   // The other difference in the server API between message objects in these
   // events and in the get-messages results is that `matchContent` and
-  // `matchSubject` are absent here.  Already [Message.matchContent] and
-  // [Message.matchSubject] are optional, so no action is needed on that.
+  // `matchTopic` are absent here.  Already [Message.matchContent] and
+  // [Message.matchTopic] are optional, so no action is needed on that.
   final Message message;
 
   MessageEvent({required super.id, required this.message});
@@ -611,26 +611,38 @@ class MessageEvent extends Event {
 @JsonSerializable(fieldRename: FieldRename.snake)
 class UpdateMessageEvent extends Event {
   @override
+  @JsonKey(includeToJson: true)
   String get type => 'update_message';
 
   final int? userId; // TODO(server-5)
   final bool? renderingOnly; // TODO(server-5)
   final int messageId;
   final List<int> messageIds;
+
   final List<MessageFlag> flags;
   final int? editTimestamp; // TODO(server-5)
-  final String? streamName;
-  final int? streamId;
+
+  // final String? streamName; // ignore
+
+  @JsonKey(name: 'stream_id')
+  final int? origStreamId;
   final int? newStreamId;
+
   final PropagateMode? propagateMode;
-  final String? origSubject;
-  final String? subject;
+
+  @JsonKey(name: 'orig_subject')
+  final String? origTopic;
+  @JsonKey(name: 'subject')
+  final String? newTopic;
+
   // final List<TopicLink> topicLinks; // TODO handle
+
   final String? origContent;
   final String? origRenderedContent;
   // final int? prevRenderedContentVersion; // deprecated
   final String? content;
   final String? renderedContent;
+
   final bool? isMeMessage;
 
   UpdateMessageEvent({
@@ -641,12 +653,11 @@ class UpdateMessageEvent extends Event {
     required this.messageIds,
     required this.flags,
     required this.editTimestamp,
-    required this.streamName,
-    required this.streamId,
+    required this.origStreamId,
     required this.newStreamId,
     required this.propagateMode,
-    required this.origSubject,
-    required this.subject,
+    required this.origTopic,
+    required this.newTopic,
     required this.origContent,
     required this.origRenderedContent,
     required this.content,
@@ -673,6 +684,7 @@ enum PropagateMode {
 @JsonSerializable(fieldRename: FieldRename.snake)
 class DeleteMessageEvent extends Event {
   @override
+  @JsonKey(includeToJson: true)
   String get type => 'delete_message';
 
   final List<int> messageIds;

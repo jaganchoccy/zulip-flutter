@@ -89,27 +89,30 @@ class NotificationDisplayManager {
     }
   }
 
-  static void _onMessageFcmMessage(MessageFcmMessage data, Map<String, dynamic> dataJson) {
+  static Future<void> _onMessageFcmMessage(MessageFcmMessage data, Map<String, dynamic> dataJson) async {
     assert(debugLog('notif message content: ${data.content}'));
     final zulipLocalizations = GlobalLocalizations.zulipLocalizations;
     final title = switch (data.recipient) {
       FcmMessageStreamRecipient(:var streamName?, :var topic) =>
-        '$streamName > $topic',
+        '#$streamName > $topic',
       FcmMessageStreamRecipient(:var topic) =>
-        '(unknown channel) > $topic', // TODO get stream name from data
+        '#(unknown channel) > $topic', // TODO get stream name from data
       FcmMessageDmRecipient(:var allRecipientIds) when allRecipientIds.length > 2 =>
         zulipLocalizations.notifGroupDmConversationLabel(
           data.senderFullName, allRecipientIds.length - 2), // TODO use others' names, from data
       FcmMessageDmRecipient() =>
         data.senderFullName,
     };
-    final conversationKey = _conversationKey(data);
-    ZulipBinding.instance.androidNotificationHost.notify(
+    final groupKey = _groupKey(data);
+    final conversationKey = _conversationKey(data, groupKey);
+
+    await ZulipBinding.instance.androidNotificationHost.notify(
       // TODO the notification ID can be constant, instead of matching requestCode
       //   (This is a legacy of `flutter_local_notifications`.)
       id: notificationIdAsHashOf(conversationKey),
       tag: conversationKey,
       channelId: NotificationChannelManager.kChannelId,
+      groupKey: groupKey,
 
       contentTitle: title,
       contentText: data.content,
@@ -139,6 +142,28 @@ class NotificationDisplayManager {
         // TODO this doesn't set the Intent flags we set in zulip-mobile; is that OK?
         //   (This is a legacy of `flutter_local_notifications`.)
         ),
+      autoCancel: true,
+    );
+
+    await ZulipBinding.instance.androidNotificationHost.notify(
+      id: notificationIdAsHashOf(groupKey),
+      tag: groupKey,
+      channelId: NotificationChannelManager.kChannelId,
+      groupKey: groupKey,
+      isGroupSummary: true,
+
+      color: kZulipBrandColor.value,
+      // TODO vary notification icon for debug
+      smallIconResourceName: 'zulip_notification', // This name must appear in keep.xml too: https://github.com/zulip/zulip-flutter/issues/528
+      inboxStyle: InboxStyle(
+        // TODO(#570) Show organization name, not URL
+        summaryText: data.realmUri.toString()),
+
+      // On Android 11 and lower, if autoCancel is not specified,
+      // the summary notification may linger even after all child
+      // notifications have been opened and cleared.
+      // TODO(android-12): cut this autoCancel workaround
+      autoCancel: true,
     );
   }
 
@@ -157,8 +182,7 @@ class NotificationDisplayManager {
       | ((bytes[3] & 0x7f) << 24);
   }
 
-  static String _conversationKey(MessageFcmMessage data) {
-    final groupKey = _groupKey(data);
+  static String _conversationKey(MessageFcmMessage data, String groupKey) {
     final conversation = switch (data.recipient) {
       FcmMessageStreamRecipient(:var streamId, :var topic) => 'stream:$streamId:$topic',
       FcmMessageDmRecipient(:var allRecipientIds) => 'dm:${allRecipientIds.join(',')}',

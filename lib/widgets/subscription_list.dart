@@ -9,6 +9,7 @@ import 'message_list.dart';
 import 'page.dart';
 import 'store.dart';
 import 'text.dart';
+import 'theme.dart';
 import 'unread_count_badge.dart';
 
 /// Scrollable listing of subscribed streams.
@@ -180,7 +181,7 @@ class _SubscriptionList extends StatelessWidget {
       itemBuilder: (BuildContext context, int index) {
         final subscription = subscriptions[index];
         final unreadCount = unreadsModel!.countInStream(subscription.streamId);
-        // TODO(#346): if stream muted, show a dot for unreads
+        // TODO(#712): if stream muted, show a dot for unreads
         return SubscriptionItem(subscription: subscription, unreadCount: unreadCount);
     });
   }
@@ -199,7 +200,7 @@ class SubscriptionItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final swatch = subscription.colorSwatch();
+    final swatch = colorSwatchFor(context, subscription);
     final hasUnreads = (unreadCount > 0);
     return Material(
       // TODO(#95) need dark-theme color
@@ -236,7 +237,7 @@ class SubscriptionItem extends StatelessWidget {
                 subscription.name))),
           if (unreadCount > 0) ...[
             const SizedBox(width: 12),
-            // TODO(#384) show @-mention indicator when it applies
+            // TODO(#747) show @-mention indicator when it applies
             UnreadCountBadge(count: unreadCount, backgroundColor: swatch, bold: true),
           ],
           const SizedBox(width: 16),

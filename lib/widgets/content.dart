@@ -32,24 +32,70 @@ import 'text.dart';
 /// background. For what this is in the message list, see
 /// widgets/message_list.dart.
 class ContentTheme extends ThemeExtension<ContentTheme> {
-  ContentTheme(BuildContext context) :
-    textStylePlainParagraph = TextStyle(
-      inherit: false,
+  factory ContentTheme.light(BuildContext context) {
+    return ContentTheme._(
+      colorCodeBlockBackground: const HSLColor.fromAHSL(0.04, 0, 0, 0).toColor(),
+      colorDirectMentionBackground: const HSLColor.fromAHSL(0.2, 240, 0.7, 0.7).toColor(),
+      colorGlobalTimeBackground: const HSLColor.fromAHSL(1, 0, 0, 0.93).toColor(),
+      colorGlobalTimeBorder: const HSLColor.fromAHSL(1, 0, 0, 0.8).toColor(),
+      colorMathBlockBorder: const HSLColor.fromAHSL(0.15, 240, 0.8, 0.5).toColor(),
+      colorMessageMediaContainerBackground: const Color.fromRGBO(0, 0, 0, 0.03),
+      colorThematicBreak: const HSLColor.fromAHSL(1, 0, 0, .87).toColor(),
+      textStylePlainParagraph: _plainParagraphCommon(context).copyWith(
+        color: const HSLColor.fromAHSL(1, 0, 0, 0.15).toColor(),
+        debugLabel: 'ContentTheme.textStylePlainParagraph'),
+      codeBlockTextStyles: CodeBlockTextStyles.light(context),
+      textStyleError: const TextStyle(fontSize: kBaseFontSize, color: Colors.red)
+        .merge(weightVariableTextStyle(context, wght: 700)),
+      textStyleErrorCode: kMonospaceTextStyle
+        .merge(const TextStyle(fontSize: kBaseFontSize, color: Colors.red)),
+      textStyleInlineCode: kMonospaceTextStyle.merge(TextStyle(
+        backgroundColor: const HSLColor.fromAHSL(0.06, 0, 0, 0).toColor())),
+      textStyleInlineMath: kMonospaceTextStyle.merge(TextStyle(
+        // TODO(#46) this won't be needed
+        backgroundColor: const HSLColor.fromAHSL(1, 240, 0.4, 0.93).toColor())),
+    );
+  }
 
-      color: const HSLColor.fromAHSL(1, 0, 0, 0.15).toColor(),
-      fontSize: kBaseFontSize,
-      letterSpacing: 0,
-      height: (22 / kBaseFontSize),
-      leadingDistribution: TextLeadingDistribution.even,
-      decoration: TextDecoration.none,
-      fontFamily: kDefaultFontFamily,
-      fontFamilyFallback: defaultFontFamilyFallback,
-    )
-      .merge(weightVariableTextStyle(context))
-      .copyWith(debugLabel: 'ContentTheme.textStylePlainParagraph');
+  factory ContentTheme.dark(BuildContext context) {
+    return ContentTheme._(
+      colorCodeBlockBackground: const HSLColor.fromAHSL(0.04, 0, 0, 1).toColor(),
+      colorDirectMentionBackground: const HSLColor.fromAHSL(0.25, 240, 0.52, 0.6).toColor(),
+      colorGlobalTimeBackground: const HSLColor.fromAHSL(0.2, 0, 0, 0).toColor(),
+      colorGlobalTimeBorder: const HSLColor.fromAHSL(0.4, 0, 0, 0).toColor(),
+      colorMathBlockBorder: const HSLColor.fromAHSL(1, 240, 0.4, 0.4).toColor(),
+      colorMessageMediaContainerBackground: const HSLColor.fromAHSL(0.03, 0, 0, 1).toColor(),
+      colorThematicBreak: const HSLColor.fromAHSL(1, 0, 0, .87).toColor().withOpacity(0.2),
+      textStylePlainParagraph: _plainParagraphCommon(context).copyWith(
+        color: const HSLColor.fromAHSL(0.75, 0, 0, 1).toColor(),
+        debugLabel: 'ContentTheme.textStylePlainParagraph'),
+      codeBlockTextStyles: CodeBlockTextStyles.dark(context),
+      textStyleError: TextStyle(fontSize: kBaseFontSize, color: Colors.red.shade900)
+        .merge(weightVariableTextStyle(context, wght: 700)),
+      textStyleErrorCode: kMonospaceTextStyle
+        .merge(TextStyle(fontSize: kBaseFontSize, color: Colors.red.shade900)),
+      textStyleInlineCode: kMonospaceTextStyle.merge(TextStyle(
+        backgroundColor: const HSLColor.fromAHSL(0.08, 0, 0, 1).toColor())),
+      textStyleInlineMath: kMonospaceTextStyle.merge(TextStyle(
+        // TODO(#46) this won't be needed
+        backgroundColor: const HSLColor.fromAHSL(1, 240, 0.4, 0.4).toColor())),
+    );
+  }
 
   ContentTheme._({
+    required this.colorCodeBlockBackground,
+    required this.colorDirectMentionBackground,
+    required this.colorGlobalTimeBackground,
+    required this.colorGlobalTimeBorder,
+    required this.colorMathBlockBorder,
+    required this.colorMessageMediaContainerBackground,
+    required this.colorThematicBreak,
     required this.textStylePlainParagraph,
+    required this.codeBlockTextStyles,
+    required this.textStyleError,
+    required this.textStyleErrorCode,
+    required this.textStyleInlineCode,
+    required this.textStyleInlineMath,
   });
 
   /// The [ContentTheme] from the context's active theme.
@@ -62,6 +108,14 @@ class ContentTheme extends ThemeExtension<ContentTheme> {
     return extension!;
   }
 
+  final Color colorCodeBlockBackground;
+  final Color colorDirectMentionBackground;
+  final Color colorGlobalTimeBackground;
+  final Color colorGlobalTimeBorder;
+  final Color colorMathBlockBorder; // TODO(#46) this won't be needed
+  final Color colorMessageMediaContainerBackground;
+  final Color colorThematicBreak;
+
   /// The complete [TextStyle] we use for plain, unstyled paragraphs.
   ///
   /// Also the base style that all other text content should inherit from.
@@ -70,22 +124,91 @@ class ContentTheme extends ThemeExtension<ContentTheme> {
   /// should not need styles from other sources, such as Material defaults.
   final TextStyle textStylePlainParagraph;
 
+  final CodeBlockTextStyles codeBlockTextStyles;
+  final TextStyle textStyleError;
+  final TextStyle textStyleErrorCode;
+
+  /// The [TextStyle] for inline code, excluding font-size adjustment.
+  ///
+  /// Inline code should use this and also apply [kInlineCodeFontSizeFactor]
+  /// to the font size of the surrounding text
+  /// (which might be a Paragraph, a Heading, etc.).
+  final TextStyle textStyleInlineCode;
+
+  /// The [TextStyle] for inline math, excluding font-size adjustment.
+  ///
+  /// Inline math should use this and also apply [kInlineCodeFontSizeFactor]
+  /// to the font size of the surrounding text
+  /// (which might be a Paragraph, a Heading, etc.).
+  final TextStyle textStyleInlineMath;
+
+  /// [ContentTheme.textStylePlainParagraph] attributes independent of theme.
+  static TextStyle _plainParagraphCommon(BuildContext context) => TextStyle(
+    inherit: false,
+
+    fontSize: kBaseFontSize,
+    letterSpacing: 0,
+    textBaseline: localizedTextBaseline(context),
+    height: (22 / kBaseFontSize),
+    leadingDistribution: TextLeadingDistribution.even,
+    decoration: TextDecoration.none,
+    fontFamily: kDefaultFontFamily,
+    fontFamilyFallback: defaultFontFamilyFallback,
+  )
+    .merge(weightVariableTextStyle(context));
+
   @override
   ContentTheme copyWith({
+    Color? colorCodeBlockBackground,
+    Color? colorDirectMentionBackground,
+    Color? colorGlobalTimeBackground,
+    Color? colorGlobalTimeBorder,
+    Color? colorMathBlockBorder,
+    Color? colorMessageMediaContainerBackground,
+    Color? colorThematicBreak,
     TextStyle? textStylePlainParagraph,
+    CodeBlockTextStyles? codeBlockTextStyles,
+    TextStyle? textStyleError,
+    TextStyle? textStyleErrorCode,
+    TextStyle? textStyleInlineCode,
+    TextStyle? textStyleInlineMath,
   }) {
     return ContentTheme._(
+      colorCodeBlockBackground: colorCodeBlockBackground ?? this.colorCodeBlockBackground,
+      colorDirectMentionBackground: colorDirectMentionBackground ?? this.colorDirectMentionBackground,
+      colorGlobalTimeBackground: colorGlobalTimeBackground ?? this.colorGlobalTimeBackground,
+      colorGlobalTimeBorder: colorGlobalTimeBorder ?? this.colorGlobalTimeBorder,
+      colorMathBlockBorder: colorMathBlockBorder ?? this.colorMathBlockBorder,
+      colorMessageMediaContainerBackground: colorMessageMediaContainerBackground ?? this.colorMessageMediaContainerBackground,
+      colorThematicBreak: colorThematicBreak ?? this.colorThematicBreak,
       textStylePlainParagraph: textStylePlainParagraph ?? this.textStylePlainParagraph,
+      codeBlockTextStyles: codeBlockTextStyles ?? this.codeBlockTextStyles,
+      textStyleError: textStyleError ?? this.textStyleError,
+      textStyleErrorCode: textStyleErrorCode ?? this.textStyleErrorCode,
+      textStyleInlineCode: textStyleInlineCode ?? this.textStyleInlineCode,
+      textStyleInlineMath: textStyleInlineMath ?? this.textStyleInlineMath,
     );
   }
 
   @override
-  ContentTheme lerp(ContentTheme? other, double t) {
+  ContentTheme lerp(ContentTheme other, double t) {
     if (identical(this, other)) {
       return this;
     }
     return ContentTheme._(
-      textStylePlainParagraph: TextStyle.lerp(textStylePlainParagraph, other?.textStylePlainParagraph, t)!,
+      colorCodeBlockBackground: Color.lerp(colorCodeBlockBackground, other.colorCodeBlockBackground, t)!,
+      colorDirectMentionBackground: Color.lerp(colorDirectMentionBackground, other.colorDirectMentionBackground, t)!,
+      colorGlobalTimeBackground: Color.lerp(colorGlobalTimeBackground, other.colorGlobalTimeBackground, t)!,
+      colorGlobalTimeBorder: Color.lerp(colorGlobalTimeBorder, other.colorGlobalTimeBorder, t)!,
+      colorMathBlockBorder: Color.lerp(colorMathBlockBorder, other.colorMathBlockBorder, t)!,
+      colorMessageMediaContainerBackground: Color.lerp(colorMessageMediaContainerBackground, other.colorMessageMediaContainerBackground, t)!,
+      colorThematicBreak: Color.lerp(colorThematicBreak, other.colorThematicBreak, t)!,
+      textStylePlainParagraph: TextStyle.lerp(textStylePlainParagraph, other.textStylePlainParagraph, t)!,
+      codeBlockTextStyles: CodeBlockTextStyles.lerp(codeBlockTextStyles, other.codeBlockTextStyles, t),
+      textStyleError: TextStyle.lerp(textStyleError, other.textStyleError, t)!,
+      textStyleErrorCode: TextStyle.lerp(textStyleErrorCode, other.textStyleErrorCode, t)!,
+      textStyleInlineCode: TextStyle.lerp(textStyleInlineCode, other.textStyleInlineCode, t)!,
+      textStyleInlineMath: TextStyle.lerp(textStyleInlineMath, other.textStyleInlineMath, t)!,
     );
   }
 }
@@ -175,7 +298,7 @@ class BlockContentList extends StatelessWidget {
         } else if (node is EmbedVideoNode) {
           return MessageEmbedVideo(node: node);
         } else if (node is UnimplementedBlockContentNode) {
-          return Text.rich(_errorUnimplemented(node));
+          return Text.rich(_errorUnimplemented(node, context: context));
         } else {
           // TODO(dart-3): Use a sealed class / pattern-matching to exclude this.
           throw Exception("impossible BlockContentNode: ${node.debugHtmlText}");
@@ -194,7 +317,7 @@ class ThematicBreak extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Divider(
-      color: const HSLColor.fromAHSL(1, 0, 0, .87).toColor(),
+      color: ContentTheme.of(context).colorThematicBreak,
       thickness: htmlHeight,
       height: 2 * htmlMarginY + htmlHeight,
     );
@@ -277,6 +400,7 @@ class Quotation extends StatelessWidget {
           border: Border(
             left: BorderSide(
               width: 5,
+              // Web has the same color in light and dark mode.
               color: const HSLColor.fromAHSL(1, 0, 0, 0.87).toColor()))),
         child: BlockContentList(nodes: node.nodes)));
   }
@@ -324,7 +448,7 @@ class ListItemWidget extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.baseline,
-      textBaseline: TextBaseline.alphabetic,
+      textBaseline: localizedTextBaseline(context),
       children: [
         SizedBox(
           width: 20, // TODO handle long numbers in <ol>, like https://github.com/zulip/zulip/pull/25063
@@ -382,6 +506,7 @@ class _SpoilerState extends State<Spoiler> with TickerProviderStateMixin {
       padding: const EdgeInsets.fromLTRB(0, 5, 0, 15),
       child: DecoratedBox(
         decoration: BoxDecoration(
+          // Web has the same color in light and dark mode.
           border: Border.all(color: const Color(0xff808080)),
           borderRadius: BorderRadius.circular(10),
         ),
@@ -401,6 +526,7 @@ class _SpoilerState extends State<Spoiler> with TickerProviderStateMixin {
                           nodes: effectiveHeader))),
                     RotationTransition(
                       turns: _animation.drive(Tween(begin: 0, end: 0.5)),
+                      // Web has the same color in light and dark mode.
                       child: const Icon(color: Color(0xffd4d4d4), size: 25,
                         Icons.expand_more)),
                   ]))),
@@ -410,6 +536,7 @@ class _SpoilerState extends State<Spoiler> with TickerProviderStateMixin {
                   child: DecoratedBox(
                     decoration: BoxDecoration(
                       border: Border(
+                        // Web has the same color in light and dark mode.
                         bottom: BorderSide(width: 1, color: Color(0xff808080))))))),
               SizeTransition(
                 sizeFactor: _animation,
@@ -487,13 +614,13 @@ class MessageInlineVideo extends StatelessWidget {
           mediaType: MediaType.video));
       },
       child: Container(
-        color: Colors.black,
+        color: Colors.black, // Web has the same color in light and dark mode.
         alignment: Alignment.center,
         // To avoid potentially confusing UX, do not show play icon as
         // we also disable onTap above.
         child: resolvedSrc == null ? null : const Icon( // TODO(log)
           Icons.play_arrow_rounded,
-          color: Colors.white,
+          color: Colors.white, // Web has the same color in light and dark mode.
           size: 32)));
   }
 }
@@ -521,7 +648,7 @@ class MessageEmbedVideo extends StatelessWidget {
           // the action uses hrefUrl, which might still work.
           const Icon(
             Icons.play_arrow_rounded,
-            color: Colors.white,
+            color: Colors.white, // Web has the same color in light and dark mode.
             size: 32),
         ]));
   }
@@ -548,7 +675,7 @@ class MessageMediaContainer extends StatelessWidget {
           //   in particular, avoid adding loose whitespace at end of message.
           padding: const EdgeInsets.only(right: 5, bottom: 5),
           child: ColoredBox(
-            color: const Color.fromRGBO(0, 0, 0, 0.03),
+            color: ContentTheme.of(context).colorMessageMediaContainerBackground,
             child: Padding(
               padding: const EdgeInsets.all(1),
               child: SizedBox(
@@ -565,19 +692,14 @@ class CodeBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final styles = ContentTheme.of(context).codeBlockTextStyles;
     return _CodeBlockContainer(
       borderColor: Colors.transparent,
-      child: Text.rich(_buildNodes(node.spans)));
-  }
-
-  InlineSpan _buildNodes(List<CodeBlockSpanNode> nodes) {
-    return TextSpan(
-      style: _kCodeBlockStyle,
-      children: nodes.map(_buildNode).toList(growable: false));
-  }
-
-  InlineSpan _buildNode(CodeBlockSpanNode node) {
-    return TextSpan(text: node.text, style: codeBlockTextStyle(node.type));
+      child: Text.rich(TextSpan(
+        style: styles.plain,
+        children: node.spans
+          .map((node) => TextSpan(style: styles.forSpan(node.type), text: node.text))
+          .toList(growable: false))));
   }
 }
 
@@ -591,7 +713,7 @@ class _CodeBlockContainer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: const HSLColor.fromAHSL(0.04, 0, 0, 0).toColor(),
+        color: ContentTheme.of(context).colorCodeBlockBackground,
         border: Border.all(
           width: 1,
           color: borderColor),
@@ -636,14 +758,12 @@ class MathBlock extends StatelessWidget {
 
   final MathBlockNode node;
 
-  static final _borderColor = const HSLColor.fromAHSL(0.15, 240, 0.8, 0.5).toColor();
-
   @override
   Widget build(BuildContext context) {
     return _CodeBlockContainer(
-      borderColor: _borderColor,
+      borderColor: ContentTheme.of(context).colorMathBlockBorder,
       child: Text.rich(TextSpan(
-        style: _kCodeBlockStyle,
+        style: ContentTheme.of(context).codeBlockTextStyles.plain,
         children: [TextSpan(text: node.texSource)])));
   }
 }
@@ -829,14 +949,14 @@ class _InlineContentBuilder {
     } else if (node is MathInlineNode) {
       return TextSpan(
         style: widget.style
-          .merge(_kInlineMathStyle)
-          .apply(fontSizeFactor: _kInlineCodeFontSizeFactor),
+          .merge(ContentTheme.of(_context!).textStyleInlineMath)
+          .apply(fontSizeFactor: kInlineCodeFontSizeFactor),
         children: [TextSpan(text: node.texSource)]);
     } else if (node is GlobalTimeNode) {
       return WidgetSpan(alignment: PlaceholderAlignment.middle,
         child: GlobalTime(node: node, ambientTextStyle: widget.style));
     } else if (node is UnimplementedInlineContentNode) {
-      return _errorUnimplemented(node);
+      return _errorUnimplemented(node, context: _context!);
     } else {
       // TODO(dart-3): Use a sealed class / pattern matching to eliminate this case.
       throw Exception("impossible InlineContentNode: ${node.debugHtmlText}");
@@ -857,6 +977,7 @@ class _InlineContentBuilder {
     assert(recognizer != null);
     _pushRecognizer(recognizer);
     final result = _buildNodes(node.nodes,
+      // Web has the same color in light and dark mode.
       style: TextStyle(color: const HSLColor.fromAHSL(1, 200, 1, 0.4).toColor()));
     _popRecognizer();
     return result;
@@ -888,8 +1009,8 @@ class _InlineContentBuilder {
 
     return _buildNodes(
       style: widget.style
-        .merge(_kInlineCodeStyle)
-        .apply(fontSizeFactor: _kInlineCodeFontSizeFactor),
+        .merge(ContentTheme.of(_context!).textStyleInlineCode)
+        .apply(fontSizeFactor: kInlineCodeFontSizeFactor),
       node.nodes,
     );
 
@@ -911,46 +1032,7 @@ class _InlineContentBuilder {
   }
 }
 
-/// The [TextStyle] for inline math, excluding font-size adjustment.
-///
-/// Inline math should use this and also apply [_kInlineCodeFontSizeFactor]
-/// to the font size of the surrounding text
-/// (which might be a Paragraph, a Heading, etc.).
-final _kInlineMathStyle = _kInlineCodeStyle.merge(TextStyle(
-  backgroundColor: const HSLColor.fromAHSL(1, 240, 0.4, 0.93).toColor()));
-
-const _kInlineCodeFontSizeFactor = 0.825;
-
-/// The [TextStyle] for inline code, excluding font-size adjustment.
-///
-/// Inline code should use this and also apply [_kInlineCodeFontSizeFactor]
-/// to the font size of the surrounding text
-/// (which might be a Paragraph, a Heading, etc.).
-final _kInlineCodeStyle = kMonospaceTextStyle
-  .merge(TextStyle(
-    backgroundColor: const HSLColor.fromAHSL(0.04, 0, 0, 0).toColor()));
-
-final _kCodeBlockStyle = kMonospaceTextStyle
-  .merge(const TextStyle(
-    fontSize: 0.825 * kBaseFontSize,
-    height: 1.4,
-  ));
-
-// const _kInlineCodeLeftBracket = '⸤';
-// const _kInlineCodeRightBracket = '⸣';
-// Some alternatives:
-// const _kInlineCodeLeftBracket = '⸢'; // end-bracket looks a lot like comma
-// const _kInlineCodeRightBracket = '⸥';
-// const _kInlineCodeLeftBracket = '｢'; // a bit bigger
-// const _kInlineCodeRightBracket = '｣';
-// const _kInlineCodeLeftBracket = '「'; // too much space
-// const _kInlineCodeRightBracket = '」';
-// const _kInlineCodeLeftBracket = '﹝'; // neat but too much space
-// const _kInlineCodeRightBracket = '﹞';
-// const _kInlineCodeLeftBracket = '❲'; // different shape, could work
-// const _kInlineCodeRightBracket = '❳';
-// const _kInlineCodeLeftBracket = '⟨'; // probably too visually similar to paren
-// const _kInlineCodeRightBracket = '⟩';
+const kInlineCodeFontSizeFactor = 0.825;
 
 class UserMention extends StatelessWidget {
   const UserMention({
@@ -964,10 +1046,11 @@ class UserMention extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final contentTheme = ContentTheme.of(context);
     return Container(
       decoration: BoxDecoration(
-        // TODO(#646) different background between direct and wildcard mentions
-        color: const HSLColor.fromAHSL(0.2, 240, 0.7, 0.7).toColor(),
+        // TODO(#646) different for wildcard mentions
+        color: contentTheme.colorDirectMentionBackground,
         borderRadius: const BorderRadius.all(Radius.circular(3))),
       padding: const EdgeInsets.symmetric(horizontal: 0.2 * kBaseFontSize),
       child: InlineContent(
@@ -1048,8 +1131,6 @@ class GlobalTime extends StatelessWidget {
   final GlobalTimeNode node;
   final TextStyle ambientTextStyle;
 
-  static final _backgroundColor = const HSLColor.fromAHSL(1, 0, 0, 0.93).toColor();
-  static final _borderColor = const HSLColor.fromAHSL(1, 0, 0, 0.8).toColor();
   static final _dateFormat = DateFormat('EEE, MMM d, y, h:mm a'); // TODO(intl): localize date
 
   @override
@@ -1057,12 +1138,13 @@ class GlobalTime extends StatelessWidget {
     // Design taken from css for `.rendered_markdown & time` in web,
     //   see zulip:web/styles/rendered_markdown.css .
     final text = _dateFormat.format(node.datetime.toLocal());
+    final contentTheme = ContentTheme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 2),
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: _backgroundColor,
-          border: Border.all(width: 1, color: _borderColor),
+          color: contentTheme.colorGlobalTimeBackground,
+          border: Border.all(width: 1, color: contentTheme.colorGlobalTimeBorder),
           borderRadius: BorderRadius.circular(3)),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 0.2 * kBaseFontSize),
@@ -1071,6 +1153,8 @@ class GlobalTime extends StatelessWidget {
             children: [
               Icon(
                 size: ambientTextStyle.fontSize!,
+                // (When GlobalTime appears in a link, it should be blue
+                // like the text.)
                 color: DefaultTextStyle.of(context).style.color!,
                 ZulipIcons.clock),
               // Ad-hoc spacing adjustment per feedback:
@@ -1326,7 +1410,10 @@ class AvatarShape extends StatelessWidget {
 // Small helpers.
 //
 
-InlineSpan _errorUnimplemented(UnimplementedNode node) {
+InlineSpan _errorUnimplemented(UnimplementedNode node, {required BuildContext context}) {
+  final contentTheme = ContentTheme.of(context);
+  final errorStyle = contentTheme.textStyleError;
+  final errorCodeStyle = contentTheme.textStyleErrorCode;
   // For now this shows error-styled HTML code even in release mode,
   // because release mode isn't yet about general users but developer demos,
   // and we want to keep the demos honest.
@@ -1334,15 +1421,15 @@ InlineSpan _errorUnimplemented(UnimplementedNode node) {
   final htmlNode = node.htmlNode;
   if (htmlNode is dom.Element) {
     return TextSpan(children: [
-      const TextSpan(text: "(unimplemented:", style: errorStyle),
+      TextSpan(text: "(unimplemented:", style: errorStyle),
       TextSpan(text: htmlNode.outerHtml, style: errorCodeStyle),
-      const TextSpan(text: ")", style: errorStyle),
+      TextSpan(text: ")", style: errorStyle),
     ]);
   } else if (htmlNode is dom.Text) {
     return TextSpan(children: [
-      const TextSpan(text: "(unimplemented: text «", style: errorStyle),
+      TextSpan(text: "(unimplemented: text «", style: errorStyle),
       TextSpan(text: htmlNode.text, style: errorCodeStyle),
-      const TextSpan(text: "»)", style: errorStyle),
+      TextSpan(text: "»)", style: errorStyle),
     ]);
   } else {
     return TextSpan(
@@ -1350,9 +1437,3 @@ InlineSpan _errorUnimplemented(UnimplementedNode node) {
       style: errorStyle);
   }
 }
-
-const errorStyle = TextStyle(
-  fontSize: kBaseFontSize, fontWeight: FontWeight.bold, color: Colors.red);
-
-final errorCodeStyle = kMonospaceTextStyle
-  .merge(const TextStyle(fontSize: kBaseFontSize, color: Colors.red));

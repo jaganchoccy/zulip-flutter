@@ -9,6 +9,13 @@ import 'package:zulip/model/store.dart';
 import '../example_data.dart' as eg;
 import 'test_store.dart';
 
+// Using Set instead of List in to avoid any duplicated test urls.
+Set<String> getUrlSyntaxVariants(String urlString) {
+  final urlWithChannelSyntax = urlString.replaceFirst('#narrow/stream', '#narrow/channel');
+  final urlWithStreamSyntax = urlString.replaceFirst('#narrow/channel', '#narrow/stream');
+  return {urlWithStreamSyntax, urlWithChannelSyntax};
+}
+
 Future<PerAccountStore> setupStore({
   required Uri realmUrl,
   List<ZulipStream>? streams,
@@ -36,12 +43,14 @@ void main() {
     assert(streams != null || users != null);
     for (final testCase in testCases) {
       final String urlString = testCase.$1;
-      final Narrow? expected = testCase.$2;
-      test(urlString, () async {
-        final store = await setupStore(realmUrl: realmUrl, streams: streams, users: users);
-        final url = store.tryResolveUrl(urlString)!;
-        check(parseInternalLink(url, store)).equals(expected);
-      });
+      for (final urlString in getUrlSyntaxVariants(urlString)) {
+        final Narrow? expected = testCase.$2;
+        test(urlString, () async {
+          final store = await setupStore(realmUrl: realmUrl, streams: streams, users: users);
+          final url = store.tryResolveUrl(urlString)!;
+          check(parseInternalLink(url, store)).equals(expected);
+        });
+      }
     }
   }
 
@@ -131,12 +140,14 @@ void main() {
       final String description = testCase.$2;
       final String urlString = testCase.$3;
       final Uri realmUrl = testCase.$4;
-      test('${expected ? 'accepts': 'rejects'} $description: $urlString', () async {
-        final store = await setupStore(realmUrl: realmUrl, streams: streams);
-        final url = store.tryResolveUrl(urlString)!;
-        final result = parseInternalLink(url, store);
-        check(result != null).equals(expected);
-      });
+      for (final urlString in getUrlSyntaxVariants(urlString)) {
+        test('${expected ? 'accepts': 'rejects'} $description: $urlString', () async {
+          final store = await setupStore(realmUrl: realmUrl, streams: streams);
+          final url = store.tryResolveUrl(urlString)!;
+          final result = parseInternalLink(url, store);
+          check(result != null).equals(expected);
+        });
+      }
     }
   });
 
@@ -161,10 +172,25 @@ void main() {
       const testCases = [
         ('/#narrow/stream/check/topic/test',                 TopicNarrow(1, 'test')),
         ('/#narrow/stream/mobile/subject/topic/near/378333', TopicNarrow(3, 'topic')),
+        ('/#narrow/stream/mobile/subject/topic/with/1',      TopicNarrow(3, 'topic')),
         ('/#narrow/stream/mobile/topic/topic/',              TopicNarrow(3, 'topic')),
         ('/#narrow/stream/stream/topic/topic/near/1',        TopicNarrow(5, 'topic')),
+        ('/#narrow/stream/stream/topic/topic/with/22',       TopicNarrow(5, 'topic')),
         ('/#narrow/stream/stream/subject/topic/near/1',      TopicNarrow(5, 'topic')),
+        ('/#narrow/stream/stream/subject/topic/with/333',    TopicNarrow(5, 'topic')),
         ('/#narrow/stream/stream/subject/topic',             TopicNarrow(5, 'topic')),
+      ];
+      testExpectedNarrows(testCases, streams: streams);
+    });
+
+    group('Both `stream` and `channel` can be used interchangeably', () {
+      const testCases = [
+        ('/#narrow/stream/check',                         StreamNarrow(1)),
+        ('/#narrow/channel/check',                        StreamNarrow(1)),
+        ('/#narrow/stream/check/topic/test',              TopicNarrow(1, 'test')),
+        ('/#narrow/channel/check/topic/test',             TopicNarrow(1, 'test')),
+        ('/#narrow/stream/check/topic/test/near/378333',  TopicNarrow(1, 'test')),
+        ('/#narrow/channel/check/topic/test/near/378333', TopicNarrow(1, 'test')),
       ];
       testExpectedNarrows(testCases, streams: streams);
     });
@@ -175,7 +201,9 @@ void main() {
       final testCases = [
         ('/#narrow/dm/1,2-group',                        expectedNarrow),
         ('/#narrow/dm/1,2-group/near/1',                 expectedNarrow),
+        ('/#narrow/dm/1,2-group/with/2',                 expectedNarrow),
         ('/#narrow/dm/a.40b.2Ecom.2Ec.2Ed.2Ecom/near/3', null),
+        ('/#narrow/dm/a.40b.2Ecom.2Ec.2Ed.2Ecom/with/4', null),
       ];
       testExpectedNarrows(testCases, streams: streams);
     });
@@ -186,7 +214,9 @@ void main() {
       final testCases = [
         ('/#narrow/pm-with/1,2-group',                        expectedNarrow),
         ('/#narrow/pm-with/1,2-group/near/1',                 expectedNarrow),
+        ('/#narrow/pm-with/1,2-group/with/2',                 expectedNarrow),
         ('/#narrow/pm-with/a.40b.2Ecom.2Ec.2Ed.2Ecom/near/3', null),
+        ('/#narrow/pm-with/a.40b.2Ecom.2Ec.2Ed.2Ecom/with/3', null),
       ];
       testExpectedNarrows(testCases, streams: streams);
     });

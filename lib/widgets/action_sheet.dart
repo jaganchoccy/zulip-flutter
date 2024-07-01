@@ -105,7 +105,7 @@ class AddThumbsUpButton extends MessageActionSheetMenuItemButton {
       switch (e) {
         case ZulipApiException():
           errorMessage = e.message;
-          // TODO specific messages for common errors, like network errors
+          // TODO(#741) specific messages for common errors, like network errors
           //   (support with reusable code)
         default:
       }
@@ -300,7 +300,7 @@ class QuoteAndReplyButton extends MessageActionSheetMenuItemButton {
       && topicController.textNormalized == kNoTopicTopic
       && message is StreamMessage
     ) {
-      topicController.value = TextEditingValue(text: message.subject);
+      topicController.value = TextEditingValue(text: message.topic);
     }
     final tag = composeBoxController.contentController
       .registerQuoteAndReplyStart(PerAccountStoreWidget.of(messageListContext),

@@ -22,6 +22,7 @@ import 'profile.dart';
 import 'sticky_header.dart';
 import 'store.dart';
 import 'text.dart';
+import 'theme.dart';
 
 class MessageListPage extends StatefulWidget {
   const MessageListPage({super.key, required this.narrow});
@@ -66,8 +67,10 @@ class _MessageListPageState extends State<MessageListPage> {
 
       case StreamNarrow(:final streamId):
       case TopicNarrow(:final streamId):
-        appBarBackgroundColor = store.subscriptions[streamId]?.colorSwatch().barBackground
-          ?? _kUnsubscribedStreamRecipientHeaderColor;
+        final subscription = store.subscriptions[streamId];
+        appBarBackgroundColor = subscription != null
+          ? colorSwatchFor(context, subscription).barBackground
+          : _kUnsubscribedStreamRecipientHeaderColor;
         // All recipient headers will match this color; remove distracting line
         // (but are recipient headers even needed for topic narrows?)
         removeAppBarBottomBorder = true;
@@ -120,7 +123,10 @@ class MessageListAppBarTitle extends StatelessWidget {
 
   final Narrow narrow;
 
-  Widget _buildStreamRow(ZulipStream? stream, String text) {
+  Widget _buildStreamRow(BuildContext context, {
+    ZulipStream? stream,
+    required String text,
+  }) {
     // A null [Icon.icon] makes a blank space.
     final icon = (stream != null) ? iconDataForStream(stream) : null;
     return Row(
@@ -128,11 +134,10 @@ class MessageListAppBarTitle extends StatelessWidget {
       // TODO(design): The vertical alignment of the stream privacy icon is a bit ad hoc.
       //   For screenshots of some experiments, see:
       //     https://github.com/zulip/zulip-flutter/pull/219#discussion_r1281024746
-      crossAxisAlignment: CrossAxisAlignment.baseline,
-      textBaseline: TextBaseline.alphabetic,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Icon(size: 16, icon),
-        const SizedBox(width: 8),
+        const SizedBox(width: 4),
         Flexible(child: Text(text)),
       ]);
   }
@@ -149,13 +154,13 @@ class MessageListAppBarTitle extends StatelessWidget {
         final store = PerAccountStoreWidget.of(context);
         final stream = store.streams[streamId];
         final streamName = stream?.name ?? '(unknown channel)';
-        return _buildStreamRow(stream, streamName);
+        return _buildStreamRow(context, stream: stream, text: streamName);
 
       case TopicNarrow(:var streamId, :var topic):
         final store = PerAccountStoreWidget.of(context);
         final stream = store.streams[streamId];
         final streamName = stream?.name ?? '(unknown channel)';
-        return _buildStreamRow(stream, "$streamName > $topic");
+        return _buildStreamRow(context, stream: stream, text: "$streamName > $topic");
 
       case DmNarrow(:var otherRecipientIds):
         final store = PerAccountStoreWidget.of(context);
@@ -298,6 +303,49 @@ class _MessageListState extends State<MessageList> with PerAccountStoreAwareStat
   Widget _buildListView(BuildContext context) {
     final length = model!.items.length;
     const centerSliverKey = ValueKey('center sliver');
+
+    Widget sliver = SliverStickyHeaderList(
+      headerPlacement: HeaderPlacement.scrollingStart,
+      delegate: SliverChildBuilderDelegate(
+        // To preserve state across rebuilds for individual [MessageItem]
+        // widgets as the size of [MessageListView.items] changes we need
+        // to match old widgets by their key to their new position in
+        // the list.
+        //
+        // The keys are of type [ValueKey] with a value of [Message.id]
+        // and here we use a O(log n) binary search method. This could
+        // be improved but for now it only triggers for materialized
+        // widgets. As a simple test, flinging through Combined feed in
+        // CZO on a Pixel 5, this only runs about 10 times per rebuild
+        // and the timing for each call is <100 microseconds.
+        //
+        // Non-message items (e.g., start and end markers) that do not
+        // have state that needs to be preserved have not been given keys
+        // and will not trigger this callback.
+        findChildIndexCallback: (Key key) {
+          final valueKey = key as ValueKey<int>;
+          final index = model!.findItemWithMessageId(valueKey.value);
+          if (index == -1) return null;
+          return length - 1 - (index - 2);
+        },
+        childCount: length + 2,
+        (context, i) {
+          // To reinforce that the end of the feed has been reached:
+          //   https://chat.zulip.org/#narrow/stream/243-mobile-team/topic/flutter.3A.20Mark-as-read/near/1680603
+          if (i == 0) return const SizedBox(height: 36);
+
+          if (i == 1) return MarkAsReadWidget(narrow: widget.narrow);
+
+          final data = model!.items[length - 1 - (i - 2)];
+          return _buildItem(data, i);
+        }));
+
+    if (widget.narrow is CombinedFeedNarrow) {
+      // TODO(#311) If we have a bottom nav, it will pad the bottom
+      //   inset, and this shouldn't be necessary
+      sliver = SliverSafeArea(sliver: sliver);
+    }
+
     return CustomScrollView(
       // TODO: Offer `ScrollViewKeyboardDismissBehavior.interactive` (or
       //   similar) if that is ever offered:
@@ -316,41 +364,7 @@ class _MessageListState extends State<MessageList> with PerAccountStoreAwareStat
       center: centerSliverKey,
 
       slivers: [
-        SliverStickyHeaderList(
-          headerPlacement: HeaderPlacement.scrollingStart,
-          delegate: SliverChildBuilderDelegate(
-            // To preserve state across rebuilds for individual [MessageItem]
-            // widgets as the size of [MessageListView.items] changes we need
-            // to match old widgets by their key to their new position in
-            // the list.
-            //
-            // The keys are of type [ValueKey] with a value of [Message.id]
-            // and here we use a O(log n) binary search method. This could
-            // be improved but for now it only triggers for materialized
-            // widgets. As a simple test, flinging through Combined feed in
-            // CZO on a Pixel 5, this only runs about 10 times per rebuild
-            // and the timing for each call is <100 microseconds.
-            //
-            // Non-message items (e.g., start and end markers) that do not
-            // have state that needs to be preserved have not been given keys
-            // and will not trigger this callback.
-            findChildIndexCallback: (Key key) {
-              final valueKey = key as ValueKey<int>;
-              final index = model!.findItemWithMessageId(valueKey.value);
-              if (index == -1) return null;
-              return length - 1 - (index - 2);
-            },
-            childCount: length + 2,
-            (context, i) {
-              // To reinforce that the end of the feed has been reached:
-              //   https://chat.zulip.org/#narrow/stream/243-mobile-team/topic/flutter.3A.20Mark-as-read/near/1680603
-              if (i == 0) return const SizedBox(height: 36);
-
-              if (i == 1) return MarkAsReadWidget(narrow: widget.narrow);
-
-              final data = model!.items[length - 1 - (i - 2)];
-              return _buildItem(data, i);
-            })),
+        sliver,
 
         // This is a trivial placeholder that occupies no space.  Its purpose is
         // to have the key that's passed to [ScrollView.center], and so to cause
@@ -443,7 +457,7 @@ class MarkAsReadWidget extends StatelessWidget {
       final zulipLocalizations = ZulipLocalizations.of(context);
       await showErrorDialog(context: context,
         title: zulipLocalizations.errorMarkAsReadFailedTitle,
-        message: e.toString());
+        message: e.toString()); // TODO(#741): extract user-facing message better
       return;
     }
     if (!context.mounted) return;
@@ -646,13 +660,13 @@ class StreamMessageRecipientHeader extends StatelessWidget {
     //   https://github.com/zulip/zulip-mobile/issues/5511
     final store = PerAccountStoreWidget.of(context);
 
-    final topic = message.subject;
+    final topic = message.topic;
 
     final subscription = store.subscriptions[message.streamId];
     final Color backgroundColor;
     final Color iconColor;
     if (subscription != null) {
-      final swatch = subscription.colorSwatch();
+      final swatch = colorSwatchFor(context, subscription);
       backgroundColor = swatch.barBackground;
       iconColor = swatch.iconOnBarBackground;
     } else {
@@ -899,7 +913,7 @@ class MessageWithPossibleSender extends StatelessWidget {
       senderRow = Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.baseline,
-        textBaseline: TextBaseline.alphabetic,
+        textBaseline: localizedTextBaseline(context),
         children: [
           Flexible(
             child: GestureDetector(

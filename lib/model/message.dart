@@ -1,5 +1,6 @@
 import '../api/model/events.dart';
 import '../api/model/model.dart';
+import '../log.dart';
 import 'message_list.dart';
 
 /// The portion of [PerAccountStore] for messages and message lists.
@@ -93,32 +94,42 @@ class MessageStoreImpl with MessageStore {
   }
 
   void handleUpdateMessageEvent(UpdateMessageEvent event) {
+    assert(event.messageIds.contains(event.messageId), "See https://github.com/zulip/zulip-flutter/pull/753#discussion_r1649463633");
+    _handleUpdateMessageEventTimestamp(event);
     _handleUpdateMessageEventContent(event);
-    // TODO(#150): Handle message moves.  The views' recipient headers
-    //   may need updating, and consequently showSender too.
+    _handleUpdateMessageEventMove(event);
+    for (final view in _messageListViews) {
+      view.notifyListenersIfAnyMessagePresent(event.messageIds);
+    }
+  }
+
+  void _handleUpdateMessageEventTimestamp(UpdateMessageEvent event) {
+    // TODO(server-5): Cut this fallback; rely on renderingOnly from FL 114
+    final isRenderingOnly = event.renderingOnly ?? (event.userId == null);
+    if (event.editTimestamp == null || isRenderingOnly) {
+      // A rendering-only update gets omitted from the message edit history,
+      // and [Message.lastEditTimestamp] is the last timestamp of that history.
+      // So on a rendering-only update, the timestamp doesn't get updated.
+      return;
+    }
+
+    for (final messageId in event.messageIds) {
+      final message = messages[messageId];
+      if (message == null) continue;
+      message.lastEditTimestamp = event.editTimestamp;
+    }
   }
 
   void _handleUpdateMessageEventContent(UpdateMessageEvent event) {
     final message = messages[event.messageId];
     if (message == null) return;
 
-    // TODO(server-5): Cut this fallback; rely on renderingOnly from FL 114
-    final isRenderingOnly = event.renderingOnly ?? (event.userId == null);
-    if (event.editTimestamp != null && !isRenderingOnly) {
-      // A rendering-only update gets omitted from the message edit history,
-      // and [Message.lastEditTimestamp] is the last timestamp of that history.
-      // So on a rendering-only update, the timestamp doesn't get updated.
-      message.lastEditTimestamp = event.editTimestamp;
-    }
-
     message.flags = event.flags;
-
     if (event.renderedContent != null) {
       assert(message.contentType == 'text/html',
         "Message contentType was ${message.contentType}; expected text/html.");
       message.content = event.renderedContent!;
     }
-
     if (event.isMeMessage != null) {
       message.isMeMessage = event.isMeMessage!;
     }
@@ -126,6 +137,41 @@ class MessageStoreImpl with MessageStore {
     for (final view in _messageListViews) {
       view.messageContentChanged(event.messageId);
     }
+  }
+
+  void _handleUpdateMessageEventMove(UpdateMessageEvent event) {
+    // The interaction between the fields of these events are a bit tricky.
+    // For reference, see: https://zulip.com/api/get-events#update_message
+
+    if (event.origTopic == null) {
+      // There was no move.
+      assert(() {
+        if (event.newStreamId != null && event.origStreamId != null
+            && event.newStreamId != event.origStreamId) {
+          // This should be impossible; `orig_subject` (aka origTopic) is
+          // documented to be present when either the stream or topic changed.
+          debugLog('Malformed UpdateMessageEvent: stream move but no origTopic'); // TODO(log)
+        }
+        return true;
+      }());
+      return;
+    }
+
+    if (event.newTopic == null) {
+      // The `subject` field (aka newTopic) is documented to be present on moves.
+      assert(debugLog('Malformed UpdateMessageEvent: move but no newTopic')); // TODO(log)
+      return;
+    }
+    if (event.origStreamId == null) {
+      // The `stream_id` field (aka origStreamId) is documented to be present on moves.
+      assert(debugLog('Malformed UpdateMessageEvent: move but no origStreamId')); // TODO(log)
+      return;
+    }
+
+    // final newStreamId = event.newStreamId; // null if topic-only move
+    // final newTopic = event.newTopic!;
+    // TODO(#150): Handle message moves.  The views' recipient headers
+    //   may need updating, and consequently showSender too.
   }
 
   void handleDeleteMessageEvent(DeleteMessageEvent event) {
