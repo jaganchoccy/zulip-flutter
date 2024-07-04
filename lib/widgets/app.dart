@@ -224,7 +224,7 @@ class ChooseAccountPageOverflowButton extends StatelessWidget {
       itemBuilder: (BuildContext context) => const [
         PopupMenuItem(
           value: ChooseAccountPageOverflowMenuItem.aboutZulip,
-          child: Text('About Zulip')),
+          child: Text('About Redbangle')),
       ],
       onSelected: (item) {
         switch (item) {

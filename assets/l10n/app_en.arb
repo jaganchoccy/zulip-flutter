@@ -1,19 +1,19 @@
 {
-  "aboutPageTitle": "About Zulip",
+  "aboutPageTitle": "About Redbangle",
   "@aboutPageTitle": {
-    "description": "Title for About Zulip page"
+    "description": "Title for About Redbangle page"
   },
   "aboutPageAppVersion": "App version",
   "@aboutPageAppVersion": {
-    "description": "Label for Zulip app version in About Zulip page"
+    "description": "Label for Redbangle app version in About Redbangle page"
   },
   "aboutPageOpenSourceLicenses": "Open-source licenses",
   "@aboutPageOpenSourceLicenses": {
-    "description": "Item title in About Zulip page to navigate to Licenses page"
+    "description": "Item title in About Redbangle page to navigate to Licenses page"
   },
   "aboutPageTapToView": "Tap to view",
   "@aboutPageTapToView": {
-    "description": "Item subtitle in About Zulip page to navigate to Licenses page"
+    "description": "Item subtitle in About Redbangle page to navigate to Licenses page"
   },
   "chooseAccountPageTitle": "Choose account",
   "@chooseAccountPageTitle": {
@@ -35,11 +35,11 @@
   "@permissionsNeededOpenSettings": {
     "description": "Button label for permissions dialog button that opens the system settings screen."
   },
-  "permissionsDeniedCameraAccess": "To upload an image, please grant Zulip additional permissions in Settings.",
+  "permissionsDeniedCameraAccess": "To upload an image, please grant Redbangle additional permissions in Settings.",
   "@permissionsDeniedCameraAccess": {
     "description": "Message for dialog asking the user to grant permissions for camera access."
   },
-  "permissionsDeniedReadExternalStorage": "To upload files, please grant Zulip additional permissions in Settings.",
+  "permissionsDeniedReadExternalStorage": "To upload files, please grant Redbangle additional permissions in Settings.",
   "@permissionsDeniedReadExternalStorage": {
     "description": "Message for dialog asking the user to grant permissions for external storage read access."
   },
@@ -120,7 +120,7 @@
   },
   "errorLoginFailedTitle": "Login failed",
   "@errorLoginFailedTitle": {
-    "description": "Error title for login when signing into a Zulip server fails."
+    "description": "Error title for login when signing into a Redbangle server fails."
   },
   "errorMessageNotSent": "Message not sent",
   "@errorMessageNotSent": {
@@ -302,11 +302,11 @@
   },
   "loginAddAnAccountPageTitle": "Add an account",
   "@loginAddAnAccountPageTitle": {
-    "description": "Page title for screen to add a Zulip account."
+    "description": "Page title for screen to add a Redbangle account."
   },
   "loginServerUrlInputLabel": "Your Redbangle server URL",
   "@loginServerUrlInputLabel": {
-    "description": "Input label in login page for Zulip server URL entry."
+    "description": "Input label in login page for Redbangle server URL entry."
   },
   "loginHidePassword": "Hide password",
   "@loginHidePassword": {
@@ -403,7 +403,7 @@
   },
   "spoilerDefaultHeaderText": "Spoiler",
   "@spoilerDefaultHeaderText": {
-    "description": "The default header text in a spoiler block ( https://zulip.com/help/spoilers )."
+    "description": "The default header text in a spoiler block ( https://Redbangle.com/help/spoilers )."
   },
   "markAllAsReadLabel": "Mark all messages as read",
   "@markAllAsReadLabel": {
