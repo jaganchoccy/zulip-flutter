@@ -83,7 +83,7 @@ class _MessageListPageState extends State<MessageListPage> {
     }
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: widget.narrow != const CombinedFeedNarrow() ?  AppBar(
           actions: [Padding(
         padding: const EdgeInsets.all(8.0),
         child: Image.asset('assets/bangle/icon.png'),
@@ -94,7 +94,7 @@ class _MessageListPageState extends State<MessageListPage> {
         shape: removeAppBarBottomBorder
           ? const Border()
           : null, // i.e., inherit
-      ),
+      ) : null,
       // TODO question for Vlad: for a stream view, should we set the Scaffold's
       //   [backgroundColor] based on stream color, as in this frame:
       //     https://www.figma.com/file/1JTNtYo9memgW7vV6d0ygq/Zulip-Mobile?node-id=132%3A9684&mode=dev
@@ -539,7 +539,7 @@ class DateSeparator extends StatelessWidget {
   final Message message;
 
   // TODO(#95) in dark theme, use white, following web
-  static const _line = BorderSide(width: 0, color: Colors.black);
+  static const _line = BorderSide(width: 0, color: const Color(0xff000000));
 
   @override
   Widget build(BuildContext context) {
@@ -547,7 +547,7 @@ class DateSeparator extends StatelessWidget {
     // to align with the vertically centered divider lines.
     const textBottomPadding = 2.0;
 
-    return ColoredBox(color: Colors.white,
+    return ColoredBox(color:const Color(0xffffffff),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
         child: Row(children: [
@@ -593,7 +593,7 @@ class MessageItem extends StatelessWidget {
       child: _UnreadMarker(
         isRead: message.flags.contains(MessageFlag.read),
         child: ColoredBox(
-          color: Colors.white,
+          color:const Color(0xffffffff),
           child: Column(children: [
             MessageWithPossibleSender(item: item),
             if (trailingWhitespace != null && item.isLastInBlock) SizedBox(height: trailingWhitespace!),
@@ -644,7 +644,7 @@ class _UnreadMarker extends StatelessWidget {
                 //   https://github.com/zulip/zulip-flutter/pull/317#issuecomment-1784311663
                 border: Border(left: BorderSide(
                   width: 1,
-                  color: Colors.white.withOpacity(0.6))))))),
+                  color:const Color(0xffffffff).withOpacity(0.6))))))),
       ]);
   }
 }
@@ -715,7 +715,7 @@ class StreamMessageRecipientHeader extends StatelessWidget {
               // Icon is 16px wide here so horizontal padding is 1px.
               padding: const EdgeInsets.symmetric(horizontal: 1),
               child: Icon(size: 16,
-                color: Colors.black.withOpacity(0.3),
+                color: const Color(0xff000000).withOpacity(0.3),
                 ZulipIcons.chevron_right)),
           ]));
     }

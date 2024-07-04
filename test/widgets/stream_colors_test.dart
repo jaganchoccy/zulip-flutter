@@ -70,7 +70,7 @@ void main() {
   group('StreamColorSwatch', () {
     group('light', () {
       test('base', () {
-        check(StreamColorSwatch.light(0xffffffff)).base.equals(const Color(0xffffffff));
+        check(StreamColorSwatch.light(0xffffffff)).base.equals(constconst Color(0xffffffff));
       });
 
       test('unreadCountBadgeBackground', () {
@@ -262,7 +262,7 @@ void main() {
     group('dark', () {
       test('base', () {
         check(StreamColorSwatch.dark(0xffffffff))
-          .base.equals(const Color(0xffffffff));
+          .base.equals(constconst Color(0xffffffff));
       });
 
       test('unreadCountBadgeBackground', () {

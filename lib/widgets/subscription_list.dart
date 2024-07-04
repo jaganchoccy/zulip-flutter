@@ -80,35 +80,29 @@ class _SubscriptionListPageState extends State<SubscriptionListPage> with PerAcc
     // TODO(i18n): add locale-aware sorting
     pinned.sortBy((subscription) => subscription.name.toLowerCase());
     unpinned.sortBy((subscription) => subscription.name.toLowerCase());
+ double screenHeight = MediaQuery.of(context).size.height;
+    return Container(
+      height: screenHeight,
+      child: CustomScrollView(
+        physics: const NeverScrollableScrollPhysics(),
+            slivers: [
+              if (pinned.isEmpty && unpinned.isEmpty)
+                const _NoSubscriptionsItem(),
+              if (pinned.isNotEmpty) ...[
+                const _SubscriptionListHeader(label: "Pinned"),
+                _SubscriptionList(unreadsModel: unreadsModel, subscriptions: pinned),
+              ],
+              if (unpinned.isNotEmpty) ...[
+                const _SubscriptionListHeader(label: "Unpinned"),
+                _SubscriptionList(unreadsModel: unreadsModel, subscriptions: unpinned),
+              ],
 
-    return Scaffold(
-      appBar: AppBar(title: const Text("Channels"),  actions: [Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Image.asset('assets/bangle/icon.png'),
-      )],
-),
-      body: SafeArea(
-        // Don't pad the bottom here; we want the list content to do that.
-        bottom: false,
-        child: CustomScrollView(
-          slivers: [
-            if (pinned.isEmpty && unpinned.isEmpty)
-              const _NoSubscriptionsItem(),
-            if (pinned.isNotEmpty) ...[
-              const _SubscriptionListHeader(label: "Pinned"),
-              _SubscriptionList(unreadsModel: unreadsModel, subscriptions: pinned),
-            ],
-            if (unpinned.isNotEmpty) ...[
-              const _SubscriptionListHeader(label: "Unpinned"),
-              _SubscriptionList(unreadsModel: unreadsModel, subscriptions: unpinned),
-            ],
+              // TODO(#188): add button leading to "All Streams" page with ability to subscribe
 
-            // TODO(#188): add button leading to "All Streams" page with ability to subscribe
-
-            // This ensures last item in scrollable can settle in an unobstructed area.
-            const SliverSafeArea(sliver: SliverToBoxAdapter(child: SizedBox.shrink())),
-          ]),
-      ));
+              // This ensures last item in scrollable can settle in an unobstructed area.
+              const SliverSafeArea(sliver: SliverToBoxAdapter(child: SizedBox.shrink())),
+            ]),
+    );
   }
 }
 
@@ -145,7 +139,7 @@ class _SubscriptionListHeader extends StatelessWidget {
     return SliverToBoxAdapter(
       child: ColoredBox(
         // TODO(#95) need dark-theme color
-        color: Colors.white,
+        color:const Color(0xffffffff),
         child: Row(crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             const SizedBox(width: 16),
@@ -208,7 +202,7 @@ class SubscriptionItem extends StatelessWidget {
     final hasUnreads = (unreadCount > 0);
     return Material(
       // TODO(#95) need dark-theme color
-      color: Colors.white,
+      color:const Color(0xffffffff),
       child: InkWell(
         onTap: () {
           Navigator.push(context,

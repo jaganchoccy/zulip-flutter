@@ -11,6 +11,7 @@ import 'message_list.dart';
 import 'page.dart';
 import 'store.dart';
 import 'text.dart';
+import 'theme.dart';
 
 class _TextStyles {
   static const primaryFieldText = TextStyle(fontSize: 20);
@@ -69,7 +70,9 @@ class ProfilePage extends StatelessWidget {
     ];
 
     return Scaffold(
-      appBar: AppBar(title: Text(user.fullName),  actions: [Padding(
+      appBar: AppBar(
+        backgroundColor: kRedBangleBrandColor,
+        title: Text(user.fullName),  actions: [Padding(
         padding: const EdgeInsets.all(8.0),
         child: Image.asset('assets/bangle/icon.png'),
       )],

@@ -158,9 +158,9 @@ class LoadingPlaceholderPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(),
-      body: const LoadingPlaceholder(),
+    return const Scaffold(
+      appBar: null,
+      body: LoadingPlaceholder(),
     );
   }
 }

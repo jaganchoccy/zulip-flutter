@@ -18,6 +18,7 @@ import 'input.dart';
 import 'page.dart';
 import 'store.dart';
 import 'text.dart';
+import 'theme.dart';
 
 class _LoginSequenceRoute extends MaterialWidgetRoute<void> {
   _LoginSequenceRoute({
@@ -203,6 +204,8 @@ class _AddAccountPageState extends State<AddAccountPage> {
 
     return Scaffold(
       appBar: AppBar(title: Text(zulipLocalizations.loginAddAnAccountPageTitle),
+
+      centerTitle: true,
         bottom: _inProgress
           ? const PreferredSize(preferredSize: Size.fromHeight(4),
               child: LinearProgressIndicator(minHeight: 4)) // 4 restates default
@@ -227,22 +230,58 @@ class _AddAccountPageState extends State<AddAccountPage> {
                   // …but leave out unfocusing the input in case more editing is needed.
                 },
                 decoration: InputDecoration(
+                   focusedErrorBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: (Colors.grey[200])!),
+          borderRadius: const BorderRadius.all(
+            Radius.circular(6.0),
+          ),
+        ),
+        isDense: true,
+        fillColor: Colors.grey[200],
+        filled: true,
+        border: OutlineInputBorder(
+          borderSide: BorderSide(color: (Colors.grey[200])!),
+          borderRadius: const BorderRadius.all(
+            Radius.circular(6.0),
+          ),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: (Colors.grey[200])!),
+          borderRadius: const BorderRadius.all(
+            Radius.circular(6.0),
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: (Colors.grey[200])!),
+          borderRadius: const BorderRadius.all(
+            Radius.circular(6.0),
+          ),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: (Colors.grey[200]!)),
+          borderRadius: const BorderRadius.all(
+            Radius.circular(6.0),
+          ),
+        ),
                   labelText: zulipLocalizations.loginServerUrlInputLabel,
                   errorText: errorText,
                   helperText: kLayoutPinningHelperText,
                   hintText: '')),
               const SizedBox(height: 8),
               ElevatedButton(
+                style: ElevatedButton.styleFrom(
+    backgroundColor: kRedBangleBrandColor, // Use the current color from notifier
+  ),
                 onPressed: !_inProgress && errorText == null
                   ? () => _onSubmitted(context)
                   : null,
-                child: Text(zulipLocalizations.dialogContinue)),
+                child: Text(zulipLocalizations.dialogContinue,style: const TextStyle(color: Color(0xffffffff)),)),
             ])))));
   }
 }
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({super.key, required this.serverSettings});
+  const LoginPage({super.key,  required this.serverSettings});
 
   static Route<void> buildRoute({required GetServerSettingsResult serverSettings}) {
     return _LoginSequenceRoute(
@@ -393,7 +432,7 @@ class _LoginPageState extends State<LoginPage> {
     }
 
     Navigator.of(context).pushAndRemoveUntil(
-      HomePage.buildRoute(accountId: accountId),
+      RedHome.buildRoute(accountId: accountId),
       (route) => (route is! _LoginSequenceRoute),
     );
   }
@@ -437,11 +476,11 @@ class _LoginPageState extends State<LoginPage> {
     ]);
 
     return Scaffold(
-      appBar: AppBar(title: Text(zulipLocalizations.loginPageTitle),
-        actions: [Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Image.asset('assets/bangle/icon.png'),
-      )],
+      backgroundColor:Color(0xffffffff),
+      appBar: AppBar(title: Text(zulipLocalizations.loginPageTitle,style: const TextStyle(color: Color(0xff000000)),),
+      backgroundColor: Color(0xffffffff),
+      centerTitle: true,
+  iconTheme: const IconThemeData(color:const Color(0xff000000)),
 
         bottom: _inProgress
           ? const PreferredSize(preferredSize: Size.fromHeight(4),
@@ -579,6 +618,39 @@ class _UsernamePasswordFormState extends State<_UsernamePasswordForm> {
       },
       textInputAction: TextInputAction.next,
       decoration: InputDecoration(
+         focusedErrorBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: const Color(0xffffffff)!),
+          borderRadius: const BorderRadius.all(
+            Radius.circular(6.0),
+          ),
+        ),
+        isDense: true,
+        fillColor: Colors.grey[200],
+        filled: true,
+        border: OutlineInputBorder(
+          borderSide: BorderSide(color: (Color(0xffffffff))!),
+          borderRadius: const BorderRadius.all(
+            Radius.circular(6.0),
+          ),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: (Color(0xffffffff))!),
+          borderRadius: const BorderRadius.all(
+            Radius.circular(6.0),
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: (Color(0xffffffff))!),
+          borderRadius: const BorderRadius.all(
+            Radius.circular(6.0),
+          ),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: (Color(0xffffffff)!)),
+          borderRadius: const BorderRadius.all(
+            Radius.circular(6.0),
+          ),
+        ),
         labelText: requireEmailFormatUsernames
           ? zulipLocalizations.loginEmailLabel
           : zulipLocalizations.loginUsernameLabel,
@@ -600,6 +672,39 @@ class _UsernamePasswordFormState extends State<_UsernamePasswordForm> {
       textInputAction: TextInputAction.go,
       onFieldSubmitted: (value) => _submit(),
       decoration: InputDecoration(
+         focusedErrorBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: (Color(0xffffffff))!),
+          borderRadius: const BorderRadius.all(
+            Radius.circular(6.0),
+          ),
+        ),
+        isDense: true,
+        fillColor: Colors.grey[200],
+        filled: true,
+        border: OutlineInputBorder(
+          borderSide: BorderSide(color: (Color(0xffffffff))!),
+          borderRadius: const BorderRadius.all(
+            Radius.circular(6.0),
+          ),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: (Color(0xffffffff))!),
+          borderRadius: const BorderRadius.all(
+            Radius.circular(6.0),
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: (Color(0xffffffff))!),
+          borderRadius: const BorderRadius.all(
+            Radius.circular(6.0),
+          ),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: (Color(0xffffffff)!)),
+          borderRadius: const BorderRadius.all(
+            Radius.circular(6.0),
+          ),
+        ),
         labelText: zulipLocalizations.loginPasswordLabel,
         helperText: kLayoutPinningHelperText,
         suffixIcon: IconButton(
@@ -615,19 +720,28 @@ class _UsernamePasswordFormState extends State<_UsernamePasswordForm> {
       child: AutofillGroup(
         child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
           Container(
-            width: 200,
-            height:180,
+            padding: EdgeInsets.all(10),
+            color: Colors.white,
+            width: 250,
+            height:350,
             child:
            Image.asset('assets/bangle/logo.png'),
            ) ,// Replace with your image path
-          const SizedBox(height: 16),
-          usernameField,
-          const SizedBox(height: 8),
-          passwordField,
-          const SizedBox(height: 8),
+          const SizedBox(height: 20),
+          Padding(
+           padding: const EdgeInsets.only(left:8.0,right: 8.0),
+            child: usernameField,
+          ),
+          Padding(
+            padding: const EdgeInsets.only(left:8.0,right: 8.0),
+            child: passwordField,
+          ),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(
+    backgroundColor: kRedBangleBrandColor,
+  ),
             onPressed: widget.loginPageState._inProgress ? null : _submit,
-            child: Text(zulipLocalizations.loginFormSubmitLabel)),
+            child: Text(zulipLocalizations.loginFormSubmitLabel,style:const TextStyle(color: Color(0xffffffff)))),
         ])));
   }
 }

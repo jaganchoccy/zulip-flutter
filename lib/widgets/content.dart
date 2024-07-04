@@ -614,13 +614,13 @@ class MessageInlineVideo extends StatelessWidget {
           mediaType: MediaType.video));
       },
       child: Container(
-        color: Colors.black, // Web has the same color in light and dark mode.
+        color: const Color(0xff000000), // Web has the same color in light and dark mode.
         alignment: Alignment.center,
         // To avoid potentially confusing UX, do not show play icon as
         // we also disable onTap above.
         child: resolvedSrc == null ? null : const Icon( // TODO(log)
           Icons.play_arrow_rounded,
-          color: Colors.white, // Web has the same color in light and dark mode.
+          color:const Color(0xffffffff), // Web has the same color in light and dark mode.
           size: 32)));
   }
 }
@@ -648,7 +648,7 @@ class MessageEmbedVideo extends StatelessWidget {
           // the action uses hrefUrl, which might still work.
           const Icon(
             Icons.play_arrow_rounded,
-            color: Colors.white, // Web has the same color in light and dark mode.
+            color:const Color(0xffffffff), // Web has the same color in light and dark mode.
             size: 32),
         ]));
   }

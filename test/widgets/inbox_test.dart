@@ -348,7 +348,7 @@ void main() {
           final icon = findHeaderCollapseIcon(tester, headerRow!);
           check(icon).icon.equals(ZulipIcons.arrow_right);
           check(allDmsHeaderBackgroundColor(tester))
-            .isNotNull().equals(Colors.white);
+            .isNotNull().equals(Color(0xffffffff));
           check(tester.widgetList(findSectionContent)).isEmpty();
         }
 
@@ -449,7 +449,7 @@ void main() {
           check(streamIcon).color.equals(
             StreamColorSwatch.light(subscription.color).iconOnPlainBackground);
           check(streamHeaderBackgroundColor(tester, streamId))
-            .isNotNull().equals(Colors.white);
+            .isNotNull().equals(Color(0xffffffff));
           check(tester.widgetList(findSectionContent)).isEmpty();
         }
 

@@ -53,7 +53,7 @@ void main() {
                 accountId: eg.selfAccount.id,
                 child: Center(
                   child: ColoredBox(
-                    color: Colors.white,
+                    color:const Color(0xffffffff),
                     child: SizedBox(
                       width: width ?? 245.0, // (seen in context on an iPhone 13 Pro)
                       child: ReactionChipsList(

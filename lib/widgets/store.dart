@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../model/binding.dart';
 import '../model/store.dart';
+import 'theme.dart';
 
 /// Provides access to the app's data.
 ///
@@ -252,7 +253,10 @@ class LoadingPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(child: CircularProgressIndicator());
+    return const Center(child: CircularProgressIndicator(
+      backgroundColor: kRedBangleBrandColor,
+      color: kRedBangleBrandColor,
+    ));
   }
 }
 

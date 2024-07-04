@@ -116,7 +116,7 @@ class NotificationDisplayManager {
 
       contentTitle: title,
       contentText: data.content,
-      color: kZulipBrandColor.value,
+      color: kRedBangleBrandColor.value,
       // TODO vary notification icon for debug
       smallIconResourceName: 'zulip_notification', // This name must appear in keep.xml too: https://github.com/zulip/zulip-flutter/issues/528
       // TODO(#128) inbox-style
@@ -152,7 +152,7 @@ class NotificationDisplayManager {
       groupKey: groupKey,
       isGroupSummary: true,
 
-      color: kZulipBrandColor.value,
+      color: kRedBangleBrandColor.value,
       // TODO vary notification icon for debug
       smallIconResourceName: 'zulip_notification', // This name must appear in keep.xml too: https://github.com/zulip/zulip-flutter/issues/528
       inboxStyle: InboxStyle(

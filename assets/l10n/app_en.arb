@@ -19,7 +19,7 @@
   "@chooseAccountPageTitle": {
     "description": "Title for ChooseAccountPage"
   },
-  "chooseAccountButtonAddAnAccount": "Start",
+  "chooseAccountButtonAddAnAccount": "Choose another account",
   "@chooseAccountButtonAddAnAccount": {
     "description": "Label for ChooseAccountPage button to add an account"
   },

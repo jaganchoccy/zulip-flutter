@@ -9,6 +9,7 @@ import 'icons.dart';
 import 'message_list.dart';
 import 'page.dart';
 import 'store.dart';
+import 'theme.dart';
 import 'unread_count_badge.dart';
 
 class RecentDmConversationsPage extends StatefulWidget {
@@ -57,9 +58,25 @@ class _RecentDmConversationsPageState extends State<RecentDmConversationsPage> w
     final zulipLocalizations = ZulipLocalizations.of(context);
     final sorted = model!.sorted;
     return Scaffold(
-      appBar: AppBar(title: Text(zulipLocalizations.recentDmConversationsPageTitle),  actions: [Padding(
+       appBar: AppBar(
+         iconTheme: const IconThemeData(color:const Color(0xffffffff)),
+        backgroundColor: kRedBangleBrandColor,
+        title:  Text(zulipLocalizations.recentDmConversationsPageTitle,style: const TextStyle(color:const Color(0xffffffff)),),
+        actions: [Padding(
         padding: const EdgeInsets.all(8.0),
-        child: Image.asset('assets/bangle/icon.png'),
+        child: Container(
+
+             width: 35,
+                          height: 35,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10.0),
+                            color:const Color(0xffffffff),
+                          ),
+
+          child: Padding(
+            padding: const EdgeInsets.all(4.0),
+            child: Image.asset('assets/bangle/icon.png'),
+          )),
       )],
 ),
       body: SafeArea(
@@ -117,12 +134,12 @@ class RecentDmConversationsItem extends StatelessWidget {
         avatar = ColoredBox(color: const Color(0x33808080),
           child: Center(
             // TODO(#95) need dark-theme color
-            child: Icon(ZulipIcons.group_dm, color: Colors.black.withOpacity(0.5))));
+            child: Icon(ZulipIcons.group_dm, color: const Color(0xff000000).withOpacity(0.5))));
     }
 
     return Material(
       // TODO(#95) need dark-theme color
-      color: Colors.white,
+      color:const Color(0xffffffff),
       child: InkWell(
         onTap: () {
           Navigator.push(context,

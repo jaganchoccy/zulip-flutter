@@ -140,7 +140,7 @@ class _LightboxPageLayoutState extends State<_LightboxPageLayout> {
     final themeData = Theme.of(context);
 
     final appBarBackgroundColor = Colors.grey.shade900.withOpacity(0.87);
-    const appBarForegroundColor = Colors.white;
+    const appBarForegroundColor =const Color(0xffffffff);
     const appBarElevation = 0.0;
 
     PreferredSizeWidget? appBar;
@@ -189,7 +189,7 @@ class _LightboxPageLayoutState extends State<_LightboxPageLayout> {
       data: themeData.copyWith(
         iconTheme: themeData.iconTheme.copyWith(color: appBarForegroundColor)),
       child: Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: const Color(0xff000000),
         extendBody: true, // For the BottomAppBar
         extendBodyBehindAppBar: true, // For the AppBar
         appBar: appBar,
@@ -274,7 +274,7 @@ class VideoDurationLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(formatDuration(duration),
       semanticsLabel: semanticsLabel,
-      style: const TextStyle(color: Colors.white));
+      style: const TextStyle(color:const Color(0xffffffff)));
   }
 }
 
@@ -323,7 +323,7 @@ class _VideoPositionSliderControlState extends State<_VideoPositionSliderControl
         child: Slider(
           value: currentPosition.inMilliseconds.toDouble(),
           max: widget.controller.value.duration.inMilliseconds.toDouble(),
-          activeColor: Colors.white,
+          activeColor:const Color(0xffffffff),
           onChangeStart: (value) {
             setState(() {
               _sliderValue = Duration(milliseconds: value.toInt());
@@ -474,7 +474,7 @@ class _VideoLightboxPageState extends State<VideoLightboxPage> with PerAccountSt
               const SizedBox(
                 width: 32,
                 height: 32,
-                child: CircularProgressIndicator(color: Colors.white)),
+                child: CircularProgressIndicator(color:const Color(0xffffffff))),
             ]))));
   }
 }

@@ -35,7 +35,7 @@ class ReactionChipsList extends StatelessWidget {
 final _textColorSelected = const HSLColor.fromAHSL(1, 210, 0.20, 0.20).toColor();
 final _textColorUnselected = const HSLColor.fromAHSL(1, 210, 0.20, 0.25).toColor();
 
-const _backgroundColorSelected = Colors.white;
+const _backgroundColorSelected =const Color(0xffffffff);
 // TODO shadow effect, following web, which uses `box-shadow: inset`:
 //   https://developer.mozilla.org/en-US/docs/Web/CSS/box-shadow#inset
 //   Needs Flutter support for something like that:
@@ -46,9 +46,9 @@ const _backgroundColorSelected = Colors.white;
 //   want to check that against web when implementing the shadow.
 final _backgroundColorUnselected = const HSLColor.fromAHSL(0.08, 210, 0.50, 0.875).toColor();
 
-final _borderColorSelected = Colors.black.withOpacity(0.45);
+final _borderColorSelected = const Color(0xff000000).withOpacity(0.45);
 // TODO see TODO on [_backgroundColorUnselected] about shadow effect
-final _borderColorUnselected = Colors.black.withOpacity(0.05);
+final _borderColorUnselected = const Color(0xff000000).withOpacity(0.05);
 
 class ReactionChip extends StatelessWidget {
   final bool showName;

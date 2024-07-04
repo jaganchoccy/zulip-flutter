@@ -57,7 +57,7 @@ ThemeData zulipThemeData(BuildContext context) {
     // Or try this tool to see the whole palette:
     //   https://m3.material.io/theme-builder#/custom
     colorScheme: ColorScheme.fromSeed(
-      seedColor: kZulipBrandColor,
+      seedColor: kRedBangleBrandColor,
     ),
     scaffoldBackgroundColor: designVariables.bgMain,
     tooltipTheme: const TooltipThemeData(preferBelow: false),
@@ -68,7 +68,7 @@ ThemeData zulipThemeData(BuildContext context) {
 ///
 /// This is chosen as the sRGB midpoint of the Zulip logo's gradient.
 // As computed by Anders: https://github.com/zulip/zulip-mobile/pull/4467
-const kZulipBrandColor = Color.fromRGBO(223, 29, 81, 1);
+const kRedBangleBrandColor = Color.fromRGBO(227, 4, 33, 1.0);
 
 /// Variables from the Figma design.
 ///

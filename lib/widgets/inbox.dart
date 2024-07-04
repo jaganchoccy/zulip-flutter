@@ -160,10 +160,25 @@ class _InboxPageState extends State<InboxPage> with PerAccountStoreAwareStateMix
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Inbox'),
+      appBar: AppBar(
+         iconTheme: const IconThemeData(color:const Color(0xffffffff)),
+        backgroundColor: kRedBangleBrandColor,
+        title: const Text('Inbox',style: TextStyle(color:const Color(0xffffffff)),),
         actions: [Padding(
         padding: const EdgeInsets.all(8.0),
-        child: Image.asset('assets/bangle/icon.png'),
+        child: Container(
+
+             width: 35,
+                          height: 35,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10.0),
+                            color:const Color(0xffffffff),
+                          ),
+
+          child: Padding(
+            padding: const EdgeInsets.all(4.0),
+            child: Image.asset('assets/bangle/icon.png'),
+          )),
       )],
 ),
       body: SafeArea(
@@ -252,7 +267,7 @@ abstract class _HeaderItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       // TODO(#95) need dark-theme color
-      color: collapsed ? Colors.white : uncollapsedBackgroundColor(context),
+      color: collapsed ?const Color(0xffffffff) : uncollapsedBackgroundColor(context),
       child: InkWell(
         // TODO use onRowTap to handle taps that are not on the collapse button.
         //   Probably we should give the collapse button a 44px or 48px square
@@ -385,7 +400,7 @@ class _DmItem extends StatelessWidget {
 
     return Material(
       // TODO(#95) need dark-theme color
-      color: Colors.white,
+      color:const Color(0xffffffff),
       child: InkWell(
         onTap: () {
           Navigator.push(context,
@@ -508,7 +523,7 @@ class _TopicItem extends StatelessWidget {
 
     return Material(
       // TODO(#95) need dark-theme color
-      color: Colors.white,
+      color:const Color(0xffffffff),
       child: InkWell(
         onTap: () {
           final narrow = TopicNarrow(streamId, topic);
