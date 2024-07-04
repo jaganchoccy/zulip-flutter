@@ -43,9 +43,13 @@
   "@permissionsDeniedReadExternalStorage": {
     "description": "Message for dialog asking the user to grant permissions for external storage read access."
   },
-  "actionSheetOptionCopy": "Copy message text",
-  "@actionSheetOptionCopy":  {
+  "actionSheetOptionCopyMessageText": "Copy message text",
+  "@actionSheetOptionCopyMessageText":  {
     "description": "Label for copy message text button on action sheet."
+  },
+  "actionSheetOptionCopyMessageLink": "Copy link to message",
+  "@actionSheetOptionCopyMessageLink": {
+    "description": "Label for copy message link button on action sheet."
   },
   "actionSheetOptionShare": "Share",
   "@actionSheetOptionShare":  {
@@ -168,9 +172,13 @@
   "@successLinkCopied": {
     "description": "Success message after copy link action completed."
   },
-  "successMessageCopied": "Message Copied",
-  "@successMessageCopied": {
+  "successMessageTextCopied": "Message text copied",
+  "@successMessageTextCopied": {
     "description": "Message when content of a message was copied to the user's system clipboard."
+  },
+  "successMessageLinkCopied": "Message link copied",
+  "@successMessageLinkCopied": {
+    "description": "Message when link of a message was copied to the user's system clipboard."
   },
   "composeBoxAttachFilesTooltip": "Attach files",
   "@composeBoxAttachFilesTooltip": {

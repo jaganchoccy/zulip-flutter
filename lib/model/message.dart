@@ -125,6 +125,11 @@ class MessageStoreImpl with MessageStore {
     if (message == null) return;
 
     message.flags = event.flags;
+    if (event.origContent != null) {
+      // The message is guaranteed to be edited.
+      // See also: https://zulip.com/api/get-events#update_message
+      message.editState = MessageEditState.edited;
+    }
     if (event.renderedContent != null) {
       assert(message.contentType == 'text/html',
         "Message contentType was ${message.contentType}; expected text/html.");
@@ -143,11 +148,16 @@ class MessageStoreImpl with MessageStore {
     // The interaction between the fields of these events are a bit tricky.
     // For reference, see: https://zulip.com/api/get-events#update_message
 
-    if (event.origTopic == null) {
+    final origStreamId = event.origStreamId;
+    final newStreamId = event.newStreamId; // null if topic-only move
+    final origTopic = event.origTopic;
+    final newTopic = event.newTopic;
+
+    if (origTopic == null) {
       // There was no move.
       assert(() {
-        if (event.newStreamId != null && event.origStreamId != null
-            && event.newStreamId != event.origStreamId) {
+        if (newStreamId != null && origStreamId != null
+            && newStreamId != origStreamId) {
           // This should be impossible; `orig_subject` (aka origTopic) is
           // documented to be present when either the stream or topic changed.
           debugLog('Malformed UpdateMessageEvent: stream move but no origTopic'); // TODO(log)
@@ -157,25 +167,43 @@ class MessageStoreImpl with MessageStore {
       return;
     }
 
-    if (event.newTopic == null) {
+    if (newTopic == null) {
       // The `subject` field (aka newTopic) is documented to be present on moves.
       assert(debugLog('Malformed UpdateMessageEvent: move but no newTopic')); // TODO(log)
       return;
     }
-    if (event.origStreamId == null) {
+    if (origStreamId == null) {
       // The `stream_id` field (aka origStreamId) is documented to be present on moves.
       assert(debugLog('Malformed UpdateMessageEvent: move but no origStreamId')); // TODO(log)
       return;
     }
 
-    // final newStreamId = event.newStreamId; // null if topic-only move
-    // final newTopic = event.newTopic!;
+    if (newStreamId == null
+        && MessageEditState.topicMoveWasResolveOrUnresolve(origTopic, newTopic)) {
+      // The topic was only resolved/unresolved.
+      // No change to the messages' editState.
+      return;
+    }
+
     // TODO(#150): Handle message moves.  The views' recipient headers
     //   may need updating, and consequently showSender too.
+    //   Currently only editState gets updated.
+    for (final messageId in event.messageIds) {
+      final message = messages[messageId];
+      if (message == null) continue;
+      // Do not override the edited marker if the message has also been moved.
+      if (message.editState == MessageEditState.edited) continue;
+      message.editState = MessageEditState.moved;
+    }
   }
 
   void handleDeleteMessageEvent(DeleteMessageEvent event) {
-    // TODO handle DeleteMessageEvent, particularly in MessageListView
+    for (final messageId in event.messageIds) {
+      messages.remove(messageId);
+    }
+    for (final view in _messageListViews) {
+      view.handleDeleteMessageEvent(event);
+    }
   }
 
   void handleUpdateMessageFlagsEvent(UpdateMessageFlagsEvent event) {

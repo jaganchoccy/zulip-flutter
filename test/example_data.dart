@@ -72,6 +72,7 @@ int _lastUserId = 1000;
 /// from the calls to [user].
 User user({
   int? userId,
+  String? deliveryEmail,
   String? email,
   String? fullName,
   bool? isActive,
@@ -79,10 +80,11 @@ User user({
   String? avatarUrl,
   Map<int, ProfileFieldUserData>? profileData,
 }) {
+  var effectiveDeliveryEmail = deliveryEmail ?? 'name@example.com'; // TODO generate example emails
   return User(
     userId: userId ?? _nextUserId(),
-    deliveryEmailStaleDoNotUse: 'name@example.com',
-    email: email ?? 'name@example.com', // TODO generate example emails
+    deliveryEmail: effectiveDeliveryEmail,
+    email: email ?? effectiveDeliveryEmail,
     fullName: fullName ?? 'A user', // TODO generate example names
     dateJoined: '2023-04-28',
     isActive: isActive ?? true,
@@ -388,6 +390,21 @@ const _unreadMsgs = unreadMsgs;
 // Events.
 //
 
+DeleteMessageEvent deleteMessageEvent(List<StreamMessage> messages) {
+  assert(messages.isNotEmpty);
+  final streamId = messages.first.streamId;
+  final topic = messages.first.topic;
+  assert(messages.every((m) => m.streamId == streamId));
+  assert(messages.every((m) => m.topic == topic));
+  return DeleteMessageEvent(
+    id: 0,
+    messageIds: messages.map((message) => message.id).toList(),
+    messageType: MessageType.stream,
+    streamId: messages[0].streamId,
+    topic: messages[0].topic,
+  );
+}
+
 UpdateMessageEvent updateMessageEditEvent(
   Message origMessage, {
   int? userId = -1, // null means null; default is [selfUser.userId]
@@ -417,6 +434,38 @@ UpdateMessageEvent updateMessageEditEvent(
     content: 'some probably-mismatched new Markdown',
     renderedContent: renderedContent ?? origMessage.content,
     isMeMessage: isMeMessage,
+  );
+}
+
+UpdateMessageEvent updateMessageMoveEvent(
+  List<Message> messages, {
+  int? newStreamId,
+  String? origTopic,
+  String? newTopic,
+  String? origContent,
+  String? newContent,
+}) {
+  assert(messages.isNotEmpty);
+  final origMessage = messages[0];
+  final messageId = origMessage.id;
+  return UpdateMessageEvent(
+    id: 0,
+    userId: selfUser.userId,
+    renderingOnly: false,
+    messageId: messageId,
+    messageIds: messages.map((message) => message.id).toList(),
+    flags: origMessage.flags,
+    editTimestamp: 1234567890, // TODO generate timestamp
+    origStreamId: origMessage is StreamMessage ? origMessage.streamId : null,
+    newStreamId: newStreamId,
+    propagateMode: null,
+    origTopic: origTopic,
+    newTopic: newTopic,
+    origContent: origContent,
+    origRenderedContent: origContent,
+    content: newContent,
+    renderedContent: newContent,
+    isMeMessage: false,
   );
 }
 

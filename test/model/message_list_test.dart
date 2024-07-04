@@ -269,6 +269,66 @@ void main() {
     check(model).fetched.isFalse();
   });
 
+  group('DeleteMessageEvent', () {
+    final stream = eg.stream();
+    final messages = List.generate(30, (i) => eg.streamMessage(stream: stream));
+
+    test('in narrow', () async {
+      await prepare(narrow: StreamNarrow(stream.streamId));
+      await prepareMessages(foundOldest: true, messages: messages);
+
+      check(model).messages.length.equals(30);
+      await store.handleEvent(eg.deleteMessageEvent(messages.sublist(0, 10)));
+      checkNotifiedOnce();
+      check(model).messages.length.equals(20);
+    });
+
+    test('not all in narrow', () async {
+      await prepare(narrow: StreamNarrow(stream.streamId));
+      await prepareMessages(foundOldest: true, messages: messages.sublist(5));
+
+      check(model).messages.length.equals(25);
+      await store.handleEvent(eg.deleteMessageEvent(messages.sublist(0, 10)));
+      checkNotifiedOnce();
+      check(model).messages.length.equals(20);
+    });
+
+    test('not in narrow', () async {
+      await prepare(narrow: StreamNarrow(stream.streamId));
+      await prepareMessages(foundOldest: true, messages: messages.sublist(5));
+
+      check(model).messages.length.equals(25);
+      await store.handleEvent(eg.deleteMessageEvent(messages.sublist(0, 5)));
+      checkNotNotified();
+      check(model).messages.length.equals(25);
+    });
+
+    test('complete message deletion', () async {
+      await prepare(narrow: StreamNarrow(stream.streamId));
+      await prepareMessages(foundOldest: true, messages: messages.sublist(0, 25));
+
+      check(model).messages.length.equals(25);
+      await store.handleEvent(eg.deleteMessageEvent(messages));
+      checkNotifiedOnce();
+      check(model).messages.length.equals(0);
+    });
+
+    test('non-consecutive message deletion', () async {
+      await prepare(narrow: StreamNarrow(stream.streamId));
+      await prepareMessages(foundOldest: true, messages: messages);
+      final messagesToDelete = messages.sublist(2, 5) + messages.sublist(10, 15);
+
+      check(model).messages.length.equals(30);
+      await store.handleEvent(eg.deleteMessageEvent(messagesToDelete));
+      checkNotifiedOnce();
+      check(model.messages.map((message) => message.id)).deepEquals([
+        ...messages.sublist(0, 2),
+        ...messages.sublist(5, 10),
+        ...messages.sublist(15),
+      ].map((message) => message.id));
+    });
+  });
+
   group('notifyListenersIfMessagePresent', () {
     test('message present', () async {
       await prepare(narrow: const CombinedFeedNarrow());
