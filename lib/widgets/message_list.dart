@@ -4,6 +4,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/zulip_localizations.dart';
 import 'package:intl/intl.dart';
+import 'package:redbangle/widgets/shared_preferences.dart';
 
 import '../api/model/model.dart';
 import '../api/model/narrow.dart';
@@ -22,7 +23,196 @@ import 'profile.dart';
 import 'sticky_header.dart';
 import 'store.dart';
 import 'text.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'theme.dart';
+
+Widget _showTopModal(BuildContext context, String narrow, Account? account) {
+
+
+
+  final TextEditingController emailController = TextEditingController();
+  List<dynamic> userData = [];
+
+  // Function to perform the API call
+  Future<void> searchUser(String email) async {
+    var url = Uri.parse('https://chat.redbangle.com/api/v1/users/$email');
+
+     // Username and password for basic auth
+                      String username = account!.email; // Replace with actual username
+                      String password = account.apiKey; // Replace with actual password
+
+                      // Encode credentials to Base64
+                      String basicAuth = 'Basic ' + base64Encode(utf8.encode('$username:$password'));
+
+
+
+    var response = await http.get(
+      url,
+      headers: {
+        'Accept': '*/*',
+       'Authorization': basicAuth, // Add Basic Auth to the header
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      // Parse and store the response in the array
+      var jsonResponse = json.decode(response.body);
+      if(jsonResponse != null){
+      userData = [jsonResponse["user"]["email"]];
+      print('User data: $userData');
+      }
+
+    } else {
+      print('Request failed with status: ${response.statusCode}');
+    }
+  }
+
+Future addUserSubscription(String email, String name, BuildContext context) async {
+  var url = Uri.parse('https://chat.redbangle.com/api/v1/users/me/subscriptions');
+
+
+     // Username and password for basic auth
+                      String username = account!.email; // Replace with actual username
+                      String password = account.apiKey; // Replace with actual password
+
+                      // Encode credentials to Base64
+                      String basicAuth = 'Basic ' + base64Encode(utf8.encode('$username:$password'));
+
+  var response = await http.post(
+    url,
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Authorization': basicAuth, // Add Basic Auth to the header
+    },
+    body: {
+      'subscriptions': json.encode([{"name": "$name"}]),
+      'principals': json.encode(["$email"]),
+    },
+  );
+
+  if (response.statusCode == 200) {
+    var jsonResponse = json.decode(response.body);
+    if (jsonResponse != null) {
+      print('Subscription added successfully: $jsonResponse');
+    }
+    Navigator.pop(context);  // You can close the dialog or navigate here if needed
+    return jsonResponse;
+  } else {
+    print('Request failed with status: ${response.statusCode}');
+    return null;  // Return null in case of failure
+  }
+}
+
+
+showAlert(BuildContext context){
+   return showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            title: Text("Success"),
+                            content: Text("User added successfully!"),
+                            actions: [
+                              TextButton(
+                                child: Text("OK"),
+                                onPressed: () {
+                                  Navigator.of(context).pop(); // Close the dialog
+                                },
+                              ),
+                            ],
+                          );
+                        },
+                      );
+}
+
+
+  return Align(
+    alignment: Alignment.topCenter,
+    child: Padding(
+      padding: const EdgeInsets.only(top: 60),
+      child: Material(
+        borderRadius: BorderRadius.circular(10),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Container(
+            width: MediaQuery.of(context).size.width * 0.9,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "Search User by Email",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: emailController,
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType: TextInputType.emailAddress,
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: () {
+                    String email = emailController.text;
+                   searchUser(email).then((_) {
+                    addUserSubscription(email, narrow,context).then((_) {
+                      // Display the alert after addUserSubscription is successful
+                      if(_ == null){
+                              addUserSubscription(email, narrow,context).then((_){
+                              if(_ != null){
+                                showAlert(context);
+                              }
+                              });
+                      }else{
+                        showAlert(context);
+
+
+                    }
+                    });
+                  });
+                  },
+                  child: const Text('Add user'),
+                ),
+                const SizedBox(height: 20),
+
+                  // Display userData here
+                  userData.isNotEmpty
+                      ? Row(
+                          children: [
+                            Text(
+                              userData[0].toString(),
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.add),
+                              onPressed: () {
+                                // Perform any action when the add button is pressed
+                                print("Add button pressed for ${userData[0]}");
+                              },
+                            ),
+                          ],
+                        )
+                      : const SizedBox(),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+
 
 class MessageListPage extends StatefulWidget {
   const MessageListPage({super.key, required this.narrow});
@@ -82,12 +272,59 @@ class _MessageListPageState extends State<MessageListPage> {
         removeAppBarBottomBorder = true;
     }
 
+
+
     return Scaffold(
       appBar: widget.narrow != const CombinedFeedNarrow() ?  AppBar(
-          actions: [Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Image.asset('assets/bangle/icon.png'),
-      )],
+          actions: [
+          CheckChannelorTopic(widget.narrow) == true
+      ? GestureDetector(
+
+
+
+          onTap: () {
+             final store = PerAccountStoreWidget.of(context);
+
+        final stream = store.streams[passsteamId(widget.narrow)];
+        final streamName = stream?.name ?? '(unknown channel)';
+
+         var accountId = getAccountId().then((accountId) {
+
+  if (accountId != null) {
+    final globalStore = GlobalStoreWidget.of(context);
+    var account = globalStore.getAccount(accountId);
+    // Do something with the account
+    print("Account details: $account");
+    showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return _showTopModal(context, streamName,account); // Custom top modal function
+              },
+            );
+  } else {
+    print("Account ID is null");
+  }
+
+});
+
+
+
+          },
+          child: const Row(
+            children: [
+              Icon(Icons.add, color: Colors.black), // Add icon
+              SizedBox(width: 5), // Space between icon and text
+              Text(
+                "Users",
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ), // Users text
+              SizedBox(width: 10),
+            ],
+          ),
+        )
+
+ : Container()
+],
 
         title: MessageListAppBarTitle(narrow: widget.narrow),
         backgroundColor: appBarBackgroundColor,
@@ -121,6 +358,31 @@ class _MessageListPageState extends State<MessageListPage> {
                 child: MessageList(narrow: widget.narrow))),
             ComposeBox(controllerKey: _composeBoxKey, narrow: widget.narrow),
           ]))));
+  }
+
+  CheckChannelorTopic(narrow) {
+    switch (narrow) {
+      case CombinedFeedNarrow():
+        return false;
+
+      case StreamNarrow(:var streamId):
+        return true;
+
+      case TopicNarrow(:var streamId, :var topic):
+        return false;
+
+      case DmNarrow(:var otherRecipientIds):
+        return false;
+    }
+  }
+
+   passsteamId(Narrow narrow) {
+    if (widget.narrow is StreamNarrow) {
+      final streamId = (widget.narrow as StreamNarrow).streamId;
+      // Now you can use the streamId
+      print('Stream ID: $streamId');
+      return streamId;
+    }
   }
 }
 

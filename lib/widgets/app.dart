@@ -4,7 +4,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_gen/gen_l10n/zulip_localizations.dart';
-
+import 'package:http/http.dart' as http;
+import 'package:redbangle/widgets/shared_preferences.dart';
+import 'dart:convert'; // for jsonEncode
 import '../model/localizations.dart';
 import '../model/narrow.dart';
 import 'about_zulip.dart';
@@ -174,8 +176,13 @@ class RedHome extends StatelessWidget {
     final store = PerAccountStoreWidget.of(context);
 double screenHeight = MediaQuery.of(context).size.height;
     var account = globalStore.getAccount(accountId);
+
+    saveAccountId(accountId);
+
     final user = store.users[account!.userId];
-    print(account);
+
+
+    print(account.apiKey);
     print(user);
 
 
@@ -214,31 +221,154 @@ double screenHeight = MediaQuery.of(context).size.height;
         child:ListView(
 
             padding: EdgeInsets.zero,
-            children: const <Widget>[
+            children: <Widget>[
              DrawerHeader(
-  decoration: BoxDecoration(
+  decoration: const BoxDecoration(
     borderRadius: BorderRadius.zero,
     color: kRedBangleBrandColor,
   ),
   child: Stack(
     children: [
-      // Rest of your DrawerHeader content (optional)
 
-      Positioned(
-        bottom: 16.0, // Adjust padding as needed
-        left: 16.0, // Adjust horizontal position as needed
-        child: Text(
-          'Subscribed channels',
-          style: TextStyle(
-            color: Color(0xffffffff),
-            fontSize: 24,
-          ),
+
+Positioned(
+  bottom: 0.0, // Adjust padding as needed
+  left: 0.0, // Adjust horizontal position as needed
+  child: Row(
+    mainAxisSize: MainAxisSize.min, // Adjust the size to the minimum required
+    children: [
+      const Text(
+        'Subscribed channels',
+        style: TextStyle(
+          color: Color(0xffffffff),
+          fontSize: 24,
         ),
       ),
+      const SizedBox(width: 16), // Adjust the width to add more space
+      user!.isAdmin ? InkWell(
+        onTap: () {
+          TextEditingController nameController = TextEditingController();
+          TextEditingController descriptionController = TextEditingController();
+
+          // Show the modal when the icon is clicked
+          showDialog(
+            context: context, // Pass the correct BuildContext
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: const Text('Create Channel'),
+                 shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8.0), // Set the border radius
+        ),
+                content: Container(
+                   width: 300,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextField(
+                        controller: nameController,
+                        decoration: const InputDecoration(
+                          labelText: 'Channel Name',
+                          hintText: 'Enter the channel name',
+                        ),
+                      ),
+                      const SizedBox(height: 16), // Spacing between fields
+                      TextField(
+                        controller: descriptionController,
+                        decoration: const InputDecoration(
+                          labelText: 'Channel Description',
+                          hintText: 'Enter the channel description',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                actions: <Widget>[
+                  ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: kRedBangleBrandColor, // Background color of the button
+                    foregroundColor: Colors.white, // Text color of the button
+                  ),
+                    onPressed: () async {
+                      // Handle submission and trigger API call here
+                      String channelName = nameController.text;
+                      String channelDescription = descriptionController.text;
+
+                      // API endpoint
+                      var url = Uri.parse('https://chat.redbangle.com/api/v1/users/me/subscriptions');
+
+                      // Username and password for basic auth
+                      String username = account.email; // Replace with actual username
+                      String password = account.apiKey; // Replace with actual password
+
+                      // Encode credentials to Base64
+                      String basicAuth = 'Basic ' + base64Encode(utf8.encode('$username:$password'));
+
+                      // Define headers with Basic Authentication
+                      var headers = {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'Authorization': basicAuth, // Add Basic Auth to the header
+                      };
+
+                      // Define the body of the request
+
+
+
+                      // Define the body as x-www-form-urlencoded
+                      var subscriptionsArray = [
+                        {
+                          'name': channelName,
+                          'description': channelDescription,
+                        }
+                      ];
+                      var body = 'subscriptions=' + Uri.encodeComponent(jsonEncode(subscriptionsArray));
+
+
+                      try {
+                        // Make the POST request
+                        var response = await http.post(url, headers: headers, body: body);
+
+                        if (response.statusCode == 200) {
+                          // Request was successful
+                          print('Subscription added successfully');
+                        } else {
+                          // Handle error
+                          print('Failed to add subscription: ${response.statusCode}');
+                        }
+                      } catch (e) {
+                        print('Error occurred: $e');
+                      }
+
+                      Navigator.of(context).pop(); // Close the modal
+                    },
+                    child:  const Text('Submit'),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop(); // Close the modal
+                    },
+                    child: const Text('Close'),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+        child: const Icon(
+          Icons.add, // Plus icon
+          color: Color(0xffffffff), // Set icon color
+          size: 24, // Set icon size
+        ),
+      ) : Container(),
     ],
   ),
 ),
-              SubscriptionListPage()
+
+
+
+    ],
+  ),
+),
+              const SubscriptionListPage()
             ],
           ),
        ),
@@ -574,7 +704,7 @@ class HomePage extends StatelessWidget {
           DefaultTextStyle.merge(
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 18),
-              child: Column(children: [])),
+              child: const Column(children: [])),
           const SizedBox(height: 16),
           ElevatedButton(
               onPressed: () => Navigator.push(
