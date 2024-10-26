@@ -27,10 +27,250 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'theme.dart';
 
+Widget _showTopicModal(BuildContext contextparent, String topicName,
+    dynamic stremId, Account? account) {
+  // Call gettopics() before building the modal
+  Future<dynamic> getTopics() async {
+    String? streamId = stremId.toString();
+    String topic = topicName;
+
+// Username and password for basic auth
+    String username = account!.email; // Replace with actual username
+    String password = account.apiKey; // Replace with actual password
+
+    // Encode credentials to Base64
+    String basicAuth =
+        'Basic ${base64Encode(utf8.encode('$username:$password'))}';
+
+    var url =
+        "https://chat.redbangle.com/api/v1/topic_restrictions_delete/?stream_id=$streamId&topic=$topic";
+    try {
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': basicAuth,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        // Assuming the API returns a list of topics in JSON format
+        final data = jsonDecode(response.body);
+        // Process the response and extract the topics as a list of strings
+        var topics = data; // Adjust based on actual response format
+        return topics;
+      } else {
+        throw Exception('Failed to load topics');
+      }
+    } catch (e) {
+      print('Error: $e');
+      return [];
+    }
+  }
+
+  Future<dynamic> RemoveUserfromTopics(
+      String email, String flag, BuildContext context) async {
+    String? streamId = stremId.toString();
+    String topic = topicName;
+
+// Username and password for basic auth
+    String username = account!.email; // Replace with actual username
+    String password = account.apiKey; // Replace with actual password
+
+    // Encode credentials to Base64
+    String basicAuth =
+        'Basic ${base64Encode(utf8.encode('$username:$password'))}';
+
+    var url =
+        "https://chat.redbangle.com/api/v1/topic_restriction_detail_ui/?stream_id=$streamId&topic=$topic&user=$email&flag=$flag";
+    try {
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': basicAuth,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        // Assuming the API returns a list of topics in JSON format
+        final data = jsonDecode(response.body);
+
+        // Process the response and extract the topics as a list of strings
+        var topics = data; // Adjust based on actual response format
+        return topics;
+      } else {
+        throw Exception('Failed to load topics');
+      }
+    } catch (e) {
+      print('Error: $e');
+      return [];
+    }
+  }
+
+  return FutureBuilder<dynamic>(
+    future: getTopics(), // Trigger getTopics when the modal is shown
+    builder: (context, snapshot) {
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        // While waiting for data, show a loading spinner or something similar
+        return Center(child: CircularProgressIndicator());
+      } else if (snapshot.hasError) {
+        // Handle error case
+        return Center(child: Text('Error loading topics'));
+      } else {
+        // Data has been loaded, now show the modal with topics
+        final topics = snapshot.data;
+        // Extract restricted and unrestricted users
+        // Extract restricted and unrestricted users
+        List<dynamic>? restrictedUsers =
+            (topics['restricted_users'] as List<dynamic>?) ?? [];
+        List<dynamic>? unrestrictedUsers =
+            (topics['unrestricted_users'] as List<dynamic>?) ?? [];
+
+        return Align(
+          alignment: Alignment.topCenter,
+          child: Padding(
+            padding: const EdgeInsets.only(top: 60),
+            child: Material(
+              borderRadius: BorderRadius.circular(10),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Container(
+                  width: MediaQuery.of(context).size.width * 0.9,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Display Restricted Users
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Text(
+                          "Topic Users",
+                          style: TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      restrictedUsers.length > 0
+                          ? ListView.builder(
+                              shrinkWrap: true,
+                              physics: NeverScrollableScrollPhysics(),
+                              itemCount: restrictedUsers?.length ??
+                                  0, // Use null-aware operator for safety
+                              itemBuilder: (context, index) {
+                                var user = restrictedUsers![
+                                    index]; // Use null assertion if you're sure it's not null
+                                return ListTile(
+                                  leading: Icon(Icons.lock_outline,
+                                      color: Colors.red),
+                                  title: Text(user['email'].toString()),
+                                  subtitle: Text(
+                                      ''), // You can add more information here if needed
+                                  trailing: ElevatedButton(
+                                    onPressed: () {
+                                      // Add your button action here
+                                      print(
+                                          'Button pressed for ${user['email']}');
+                                      RemoveUserfromTopics(
+                                              user['email'].toString(),
+                                              'Y',
+                                              context)
+                                          .then((res) => {
+                                                Navigator.pop(contextparent),
+                                                if (res["MSG"] == 'Success')
+                                                  {
+                                                    showAlert(contextparent,
+                                                        "User removed successfully")
+                                                  }
+                                              });
+                                    },
+                                    child: Text(
+                                        'Remove'), // You can customize the button text
+                                  ),
+                                );
+                              },
+                            )
+                          : Container(),
+
+                      // Display Unrestricted Users
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Text(
+                          "Channel Users",
+                          style: TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: NeverScrollableScrollPhysics(),
+                        itemCount: unrestrictedUsers?.length ??
+                            0, // Use null-aware operator for safety
+                        itemBuilder: (context, index) {
+                          var user = unrestrictedUsers![
+                              index]; // Use null assertion if you're sure it's not null
+                          return ListTile(
+                            leading:
+                                Icon(Icons.lock_outline, color: Colors.red),
+                            title: Text(user['email'].toString()),
+                            subtitle: Text(
+                                ''), // You can add more information here if needed
+                            trailing: ElevatedButton(
+                              onPressed: () {
+                                // Add your button action here
+                                print('Button pressed for ${user['email']}');
+                                RemoveUserfromTopics(
+                                        user['email'].toString(), 'N', context)
+                                    .then((res) => {
+                                          Navigator.pop(contextparent),
+                                          if (res["MSG"] == 'Success')
+                                            {
+                                              showAlert(contextparent,
+                                                  "User added successfully")
+                                            }
+                                        });
+                              },
+                              child: Text(
+                                  'Add'), // You can customize the button text
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+    },
+  );
+}
+
+showAlert(BuildContext context, String Msg) {
+  return showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text("Success"),
+        content: Text(Msg),
+        actions: [
+          TextButton(
+            child: Text("OK"),
+            onPressed: () {
+              Navigator.of(context).pop(); // Close the dialog
+            },
+          ),
+        ],
+      );
+    },
+  );
+}
+
 Widget _showTopModal(BuildContext context, String narrow, Account? account) {
-
-
-
   final TextEditingController emailController = TextEditingController();
   List<dynamic> userData = [];
 
@@ -38,20 +278,19 @@ Widget _showTopModal(BuildContext context, String narrow, Account? account) {
   Future<void> searchUser(String email) async {
     var url = Uri.parse('https://chat.redbangle.com/api/v1/users/$email');
 
-     // Username and password for basic auth
-                      String username = account!.email; // Replace with actual username
-                      String password = account.apiKey; // Replace with actual password
+    // Username and password for basic auth
+    String username = account!.email; // Replace with actual username
+    String password = account.apiKey; // Replace with actual password
 
-                      // Encode credentials to Base64
-                      String basicAuth = 'Basic ' + base64Encode(utf8.encode('$username:$password'));
-
-
+    // Encode credentials to Base64
+    String basicAuth =
+        'Basic ' + base64Encode(utf8.encode('$username:$password'));
 
     var response = await http.get(
       url,
       headers: {
         'Accept': '*/*',
-       'Authorization': basicAuth, // Add Basic Auth to the header
+        'Authorization': basicAuth, // Add Basic Auth to the header
         'Content-Type': 'application/x-www-form-urlencoded',
       },
     );
@@ -59,73 +298,75 @@ Widget _showTopModal(BuildContext context, String narrow, Account? account) {
     if (response.statusCode == 200) {
       // Parse and store the response in the array
       var jsonResponse = json.decode(response.body);
-      if(jsonResponse != null){
-      userData = [jsonResponse["user"]["email"]];
-      print('User data: $userData');
+      if (jsonResponse != null) {
+        userData = [jsonResponse["user"]["email"]];
+        print('User data: $userData');
       }
-
     } else {
       print('Request failed with status: ${response.statusCode}');
     }
   }
 
-Future addUserSubscription(String email, String name, BuildContext context) async {
-  var url = Uri.parse('https://chat.redbangle.com/api/v1/users/me/subscriptions');
+  Future addUserSubscription(
+      String email, String name, BuildContext context) async {
+    var url =
+        Uri.parse('https://chat.redbangle.com/api/v1/users/me/subscriptions');
 
+    // Username and password for basic auth
+    String username = account!.email; // Replace with actual username
+    String password = account.apiKey; // Replace with actual password
 
-     // Username and password for basic auth
-                      String username = account!.email; // Replace with actual username
-                      String password = account.apiKey; // Replace with actual password
+    // Encode credentials to Base64
+    String basicAuth =
+        'Basic ' + base64Encode(utf8.encode('$username:$password'));
 
-                      // Encode credentials to Base64
-                      String basicAuth = 'Basic ' + base64Encode(utf8.encode('$username:$password'));
+    var response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': basicAuth, // Add Basic Auth to the header
+      },
+      body: {
+        'subscriptions': json.encode([
+          {"name": "$name"}
+        ]),
+        'principals': json.encode(["$email"]),
+      },
+    );
 
-  var response = await http.post(
-    url,
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'Authorization': basicAuth, // Add Basic Auth to the header
-    },
-    body: {
-      'subscriptions': json.encode([{"name": "$name"}]),
-      'principals': json.encode(["$email"]),
-    },
-  );
-
-  if (response.statusCode == 200) {
-    var jsonResponse = json.decode(response.body);
-    if (jsonResponse != null) {
-      print('Subscription added successfully: $jsonResponse');
+    if (response.statusCode == 200) {
+      var jsonResponse = json.decode(response.body);
+      if (jsonResponse != null) {
+        print('Subscription added successfully: $jsonResponse');
+      }
+      Navigator.pop(
+          context); // You can close the dialog or navigate here if needed
+      return jsonResponse;
+    } else {
+      print('Request failed with status: ${response.statusCode}');
+      return null; // Return null in case of failure
     }
-    Navigator.pop(context);  // You can close the dialog or navigate here if needed
-    return jsonResponse;
-  } else {
-    print('Request failed with status: ${response.statusCode}');
-    return null;  // Return null in case of failure
   }
-}
 
-
-showAlert(BuildContext context){
-   return showDialog(
-                        context: context,
-                        builder: (BuildContext context) {
-                          return AlertDialog(
-                            title: Text("Success"),
-                            content: Text("User added successfully!"),
-                            actions: [
-                              TextButton(
-                                child: Text("OK"),
-                                onPressed: () {
-                                  Navigator.of(context).pop(); // Close the dialog
-                                },
-                              ),
-                            ],
-                          );
-                        },
-                      );
-}
-
+  showAlert(BuildContext context) {
+    return showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Success"),
+          content: Text("User added successfully!"),
+          actions: [
+            TextButton(
+              child: Text("OK"),
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   return Align(
     alignment: Alignment.topCenter,
@@ -164,45 +405,43 @@ showAlert(BuildContext context){
                 ElevatedButton(
                   onPressed: () {
                     String email = emailController.text;
-                   searchUser(email).then((_) {
-                    addUserSubscription(email, narrow,context).then((_) {
-                      // Display the alert after addUserSubscription is successful
-                      if(_ == null){
-                              addUserSubscription(email, narrow,context).then((_){
-                              if(_ != null){
-                                showAlert(context);
-                              }
-                              });
-                      }else{
-                        showAlert(context);
-
-
-                    }
+                    searchUser(email).then((_) {
+                      addUserSubscription(email, narrow, context).then((_) {
+                        // Display the alert after addUserSubscription is successful
+                        if (_ == null) {
+                          addUserSubscription(email, narrow, context).then((_) {
+                            if (_ != null) {
+                              showAlert(context);
+                            }
+                          });
+                        } else {
+                          showAlert(context);
+                        }
+                      });
                     });
-                  });
                   },
                   child: const Text('Add user'),
                 ),
                 const SizedBox(height: 20),
 
-                  // Display userData here
-                  userData.isNotEmpty
-                      ? Row(
-                          children: [
-                            Text(
-                              userData[0].toString(),
-                              style: const TextStyle(fontSize: 16),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.add),
-                              onPressed: () {
-                                // Perform any action when the add button is pressed
-                                print("Add button pressed for ${userData[0]}");
-                              },
-                            ),
-                          ],
-                        )
-                      : const SizedBox(),
+                // Display userData here
+                userData.isNotEmpty
+                    ? Row(
+                        children: [
+                          Text(
+                            userData[0].toString(),
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.add),
+                            onPressed: () {
+                              // Perform any action when the add button is pressed
+                              print("Add button pressed for ${userData[0]}");
+                            },
+                          ),
+                        ],
+                      )
+                    : const SizedBox(),
               ],
             ),
           ),
@@ -212,15 +451,15 @@ showAlert(BuildContext context){
   );
 }
 
-
-
 class MessageListPage extends StatefulWidget {
   const MessageListPage({super.key, required this.narrow});
 
-  static Route<void> buildRoute({int? accountId, BuildContext? context,
-      required Narrow narrow}) {
-    return MaterialAccountWidgetRoute(accountId: accountId, context: context,
-      page: MessageListPage(narrow: narrow));
+  static Route<void> buildRoute(
+      {int? accountId, BuildContext? context, required Narrow narrow}) {
+    return MaterialAccountWidgetRoute(
+        accountId: accountId,
+        context: context,
+        page: MessageListPage(narrow: narrow));
   }
 
   /// A [ComposeBoxController], if this [MessageListPage] offers a compose box.
@@ -228,7 +467,8 @@ class MessageListPage extends StatefulWidget {
   /// Uses the inefficient [BuildContext.findAncestorStateOfType];
   /// don't call this in a build method.
   static ComposeBoxController? composeBoxControllerOf(BuildContext context) {
-    final messageListPageState = context.findAncestorStateOfType<_MessageListPageState>();
+    final messageListPageState =
+        context.findAncestorStateOfType<_MessageListPageState>();
     assert(messageListPageState != null, 'No MessageListPage ancestor');
     return messageListPageState!._composeBoxKey.currentState;
   }
@@ -251,7 +491,7 @@ class _MessageListPageState extends State<MessageListPage> {
 
     final Color? appBarBackgroundColor;
     bool removeAppBarBottomBorder = false;
-    switch(widget.narrow) {
+    switch (widget.narrow) {
       case CombinedFeedNarrow():
         appBarBackgroundColor = null; // i.e., inherit
 
@@ -259,8 +499,8 @@ class _MessageListPageState extends State<MessageListPage> {
       case TopicNarrow(:final streamId):
         final subscription = store.subscriptions[streamId];
         appBarBackgroundColor = subscription != null
-          ? colorSwatchFor(context, subscription).barBackground
-          : _kUnsubscribedStreamRecipientHeaderColor;
+            ? colorSwatchFor(context, subscription).barBackground
+            : _kUnsubscribedStreamRecipientHeaderColor;
         // All recipient headers will match this color; remove distracting line
         // (but are recipient headers even needed for topic narrows?)
         removeAppBarBottomBorder = true;
@@ -272,92 +512,194 @@ class _MessageListPageState extends State<MessageListPage> {
         removeAppBarBottomBorder = true;
     }
 
-
-
     return Scaffold(
-      appBar: widget.narrow != const CombinedFeedNarrow() ?  AppBar(
-          actions: [
-          CheckChannelorTopic(widget.narrow) == true
-      ? GestureDetector(
+        appBar: widget.narrow != const CombinedFeedNarrow()
+            ? AppBar(
+                actions: [
+                  GestureDetector(
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            title: Text(
+                                "Are you sure you want to Unsubscribe the channel?"),
+                            actions: [
+                              TextButton(
+                                child: Text("Cancel"),
+                                onPressed: () {
+                                  Navigator.of(context)
+                                      .pop(); // Close the dialog
+                                },
+                              ),
+                              TextButton(
+                                child: Text("Unsubscribe"),
+                                onPressed: () {
+
+
+                            final stream =
+                                store.streams[passsteamId(widget.narrow)];
+                            final streamName =
+                                stream?.name ?? '(unknown channel)';
+ var accountId = getAccountId().then((accountId) {
+                                  if (accountId != null) {
+                                    final globalStore =
+                                        GlobalStoreWidget.of(context);
+                                    var account =
+                                        globalStore.getAccount(accountId);
+                                    // Do something with the account
+                                    print("Account details: $account");
+                                    // Add your delete logic here
+                                  unsubscribeChannel(streamName,account);
+                                  Navigator.of(context)
+                                      .pop();
+                                  }
+ });
 
 
 
-          onTap: () {
-             final store = PerAccountStoreWidget.of(context);
-
-        final stream = store.streams[passsteamId(widget.narrow)];
-        final streamName = stream?.name ?? '(unknown channel)';
-
-         var accountId = getAccountId().then((accountId) {
-
-  if (accountId != null) {
-    final globalStore = GlobalStoreWidget.of(context);
-    var account = globalStore.getAccount(accountId);
-    // Do something with the account
-    print("Account details: $account");
-    showDialog(
-              context: context,
-              builder: (BuildContext context) {
-                return _showTopModal(context, streamName,account); // Custom top modal function
-              },
-            );
-  } else {
-    print("Account ID is null");
-  }
-
-});
 
 
 
-          },
-          child: const Row(
-            children: [
-              Icon(Icons.add, color: Colors.black), // Add icon
-              SizedBox(width: 5), // Space between icon and text
-              Text(
-                "Users",
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ), // Users text
-              SizedBox(width: 10),
-            ],
-          ),
-        )
+                                },
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    },
+                    child: const Row(
+                      children: [
+                        Icon(Icons.exit_to_app, color: Colors.black), // Add icon
+                        SizedBox(width: 5), // Space between icon and text
+                        // Users text
+                        SizedBox(width: 10),
+                      ],
+                    ),
+                  ),
+                  CheckChannelorTopic(widget.narrow) == true
+                      ? GestureDetector(
+                          onTap: () {
+                            final store = PerAccountStoreWidget.of(context);
 
- : Container()
-],
+                            final stream =
+                                store.streams[passsteamId(widget.narrow)];
+                            final streamName =
+                                stream?.name ?? '(unknown channel)';
 
-        title: MessageListAppBarTitle(narrow: widget.narrow),
-        backgroundColor: appBarBackgroundColor,
-        shape: removeAppBarBottomBorder
-          ? const Border()
-          : null, // i.e., inherit
-      ) : null,
-      // TODO question for Vlad: for a stream view, should we set the Scaffold's
-      //   [backgroundColor] based on stream color, as in this frame:
-      //     https://www.figma.com/file/1JTNtYo9memgW7vV6d0ygq/Zulip-Mobile?node-id=132%3A9684&mode=dev
-      //   That's not obviously preferred over the default background that
-      //   we matched to the Figma in 21dbae120. See another frame, which uses that:
-      //     https://www.figma.com/file/1JTNtYo9memgW7vV6d0ygq/Zulip-Mobile?node-id=147%3A9088&mode=dev
-      body: Builder(
-        builder: (BuildContext context) => Center(
-          child: Column(children: [
-            MediaQuery.removePadding(
-              // Scaffold knows about the app bar, and so has run this
-              // BuildContext, which is under `body`, through
-              // MediaQuery.removePadding with `removeTop: true`.
-              context: context,
+                            var accountId = getAccountId().then((accountId) {
+                              if (accountId != null) {
+                                final globalStore =
+                                    GlobalStoreWidget.of(context);
+                                var account = globalStore.getAccount(accountId);
+                                // Do something with the account
+                                print("Account details: $account");
+                                showDialog(
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    return _showTopModal(context, streamName,
+                                        account); // Custom top modal function
+                                  },
+                                );
+                              } else {
+                                print("Account ID is null");
+                              }
+                            });
+                          },
+                          child: const Row(
+                            children: [
+                              Icon(Icons.add, color: Colors.black), // Add icon
+                              SizedBox(width: 5), // Space between icon and text
+                              Text(
+                                "Users",
+                                style: TextStyle(
+                                    fontSize: 16, fontWeight: FontWeight.bold),
+                              ), // Users text
+                              SizedBox(width: 10),
+                            ],
+                          ),
+                        )
+                      : isTopic(widget.narrow)
+                          ? GestureDetector(
+                              onTap: () {
+                                final store = PerAccountStoreWidget.of(context);
+                                final stremId = passsteamId(widget.narrow);
+                                final stream =
+                                    store.streams[passsteamId(widget.narrow)];
+                                final streamName =
+                                    stream?.name ?? '(unknown channel)';
+                                final topicNamevalue = TopicName(widget.narrow);
 
-              // The compose box, when present, pads the bottom inset.
-              // TODO this copies the details of when the compose box is shown;
-              //   if those details get complicated, refactor to avoid copying.
-              // TODO(#311) If we have a bottom nav, it will pad the bottom
-              //   inset, and this should always be true.
-              removeBottom: widget.narrow is! CombinedFeedNarrow,
+                                var accountId =
+                                    getAccountId().then((accountId) {
+                                  if (accountId != null) {
+                                    final globalStore =
+                                        GlobalStoreWidget.of(context);
+                                    var account =
+                                        globalStore.getAccount(accountId);
+                                    // Do something with the account
+                                    print("Account details: $account");
 
-              child: Expanded(
-                child: MessageList(narrow: widget.narrow))),
-            ComposeBox(controllerKey: _composeBoxKey, narrow: widget.narrow),
-          ]))));
+                                    showDialog(
+                                      context: context,
+                                      builder: (BuildContext context) {
+                                        return _showTopicModal(
+                                            context,
+                                            topicNamevalue.toString(),
+                                            stremId,
+                                            account); // Custom top modal function
+                                      },
+                                    );
+                                  } else {
+                                    print("Account ID is null");
+                                  }
+                                });
+                              },
+                              child: const Row(
+                                children: [
+                                  Icon(Icons.more_vert,
+                                      color: Colors.black), // Add icon
+                                  SizedBox(
+                                      width: 5), // Space between icon and text
+                                ],
+                              ),
+                            )
+                          : Container()
+                ],
+
+                title: MessageListAppBarTitle(narrow: widget.narrow),
+                backgroundColor: appBarBackgroundColor,
+                shape: removeAppBarBottomBorder
+                    ? const Border()
+                    : null, // i.e., inherit
+              )
+            : null,
+        // TODO question for Vlad: for a stream view, should we set the Scaffold's
+        //   [backgroundColor] based on stream color, as in this frame:
+        //     https://www.figma.com/file/1JTNtYo9memgW7vV6d0ygq/Zulip-Mobile?node-id=132%3A9684&mode=dev
+        //   That's not obviously preferred over the default background that
+        //   we matched to the Figma in 21dbae120. See another frame, which uses that:
+        //     https://www.figma.com/file/1JTNtYo9memgW7vV6d0ygq/Zulip-Mobile?node-id=147%3A9088&mode=dev
+        body: Builder(
+            builder: (BuildContext context) => Center(
+                    child: Column(children: [
+                  MediaQuery.removePadding(
+                      // Scaffold knows about the app bar, and so has run this
+                      // BuildContext, which is under `body`, through
+                      // MediaQuery.removePadding with `removeTop: true`.
+                      context: context,
+
+                      // The compose box, when present, pads the bottom inset.
+                      // TODO this copies the details of when the compose box is shown;
+                      //   if those details get complicated, refactor to avoid copying.
+                      // TODO(#311) If we have a bottom nav, it will pad the bottom
+                      //   inset, and this should always be true.
+                      removeBottom: widget.narrow is! CombinedFeedNarrow,
+                      child:
+                          Expanded(child: MessageList(narrow: widget.narrow))),
+                  ComposeBox(
+                      controllerKey: _composeBoxKey, narrow: widget.narrow),
+                ]))));
   }
 
   CheckChannelorTopic(narrow) {
@@ -376,14 +718,70 @@ class _MessageListPageState extends State<MessageListPage> {
     }
   }
 
-   passsteamId(Narrow narrow) {
+  bool isTopic(dynamic narrow) {
+    if (narrow is TopicNarrow) {
+      return true;
+    }
+    return false;
+  }
+
+  passsteamId(Narrow narrow) {
     if (widget.narrow is StreamNarrow) {
       final streamId = (widget.narrow as StreamNarrow).streamId;
       // Now you can use the streamId
       print('Stream ID: $streamId');
       return streamId;
+    } else if (widget.narrow is TopicNarrow) {
+      final streamId = (widget.narrow as TopicNarrow).streamId;
+      // Now you can use the streamId
+      print('Stream ID: $streamId');
+      return streamId;
     }
   }
+
+  TopicName(Narrow narrow) {
+    if (widget.narrow is TopicNarrow) {
+      final topic = (widget.narrow as TopicNarrow).topic;
+      // Now you can use the streamId
+      print('topic name: $topic');
+      return topic;
+    }
+  }
+
+
+
+   // Function to perform the API cal
+Future<void> unsubscribeChannel(String channelName, Account? account) async {
+  var url = Uri.parse('https://chat.redbangle.com/json/users/me/subscriptions');
+
+  // Username and password for basic auth
+  String username = account!.email;
+  String password = account.apiKey;
+
+  // Encode credentials to Base64
+  String basicAuth = 'Basic ' + base64Encode(utf8.encode('$username:$password'));
+
+  // Prepare the data for the DELETE request
+  var body = 'subscriptions=${jsonEncode([channelName])}';
+
+  var response = await http.delete(
+    url,
+    headers: {
+      'Authorization': basicAuth,
+      'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+    },
+    body: body,
+  );
+
+  if (response.statusCode == 200) {
+    // Parse and store the response in the array
+    var jsonResponse = json.decode(response.body);
+    print('Unsubscribed successfully: $jsonResponse');
+  } else {
+    print('Request failed with status: ${response.statusCode}');
+  }
+}
+
 }
 
 class MessageListAppBarTitle extends StatelessWidget {
@@ -391,23 +789,24 @@ class MessageListAppBarTitle extends StatelessWidget {
 
   final Narrow narrow;
 
-  Widget _buildStreamRow(BuildContext context, {
+  Widget _buildStreamRow(
+    BuildContext context, {
     ZulipStream? stream,
     required String text,
   }) {
     // A null [Icon.icon] makes a blank space.
     final icon = (stream != null) ? iconDataForStream(stream) : null;
     return Row(
-      mainAxisSize: MainAxisSize.min,
-      // TODO(design): The vertical alignment of the stream privacy icon is a bit ad hoc.
-      //   For screenshots of some experiments, see:
-      //     https://github.com/zulip/zulip-flutter/pull/219#discussion_r1281024746
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Icon(size: 16, icon),
-        const SizedBox(width: 4),
-        Flexible(child: Text(text)),
-      ]);
+        mainAxisSize: MainAxisSize.min,
+        // TODO(design): The vertical alignment of the stream privacy icon is a bit ad hoc.
+        //   For screenshots of some experiments, see:
+        //     https://github.com/zulip/zulip-flutter/pull/219#discussion_r1281024746
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(size: 16, icon),
+          const SizedBox(width: 4),
+          Flexible(child: Text(text)),
+        ]);
   }
 
   @override
@@ -428,14 +827,16 @@ class MessageListAppBarTitle extends StatelessWidget {
         final store = PerAccountStoreWidget.of(context);
         final stream = store.streams[streamId];
         final streamName = stream?.name ?? '(unknown channel)';
-        return _buildStreamRow(context, stream: stream, text: "$streamName > $topic");
+        return _buildStreamRow(context,
+            stream: stream, text: "$streamName > $topic");
 
       case DmNarrow(:var otherRecipientIds):
         final store = PerAccountStoreWidget.of(context);
         if (otherRecipientIds.isEmpty) {
           return const Text("DMs with yourself");
         } else {
-          final names = otherRecipientIds.map((id) => store.users[id]?.fullName ?? '(unknown user)');
+          final names = otherRecipientIds
+              .map((id) => store.users[id]?.fullName ?? '(unknown user)');
           return Text("DMs with ${names.join(", ")}"); // TODO show avatars
         }
     }
@@ -453,7 +854,8 @@ const _kShortMessageHeight = 80;
 //
 // When the user reaches this point, they're at least halfway through the
 // previous batch.
-const kFetchMessagesBufferPixels = (kMessageListFetchBatchSize / 2) * _kShortMessageHeight;
+const kFetchMessagesBufferPixels =
+    (kMessageListFetchBatchSize / 2) * _kShortMessageHeight;
 
 class MessageList extends StatefulWidget {
   const MessageList({super.key, required this.narrow});
@@ -464,10 +866,12 @@ class MessageList extends StatefulWidget {
   State<StatefulWidget> createState() => _MessageListState();
 }
 
-class _MessageListState extends State<MessageList> with PerAccountStoreAwareStateMixin<MessageList> {
+class _MessageListState extends State<MessageList>
+    with PerAccountStoreAwareStateMixin<MessageList> {
   MessageListView? model;
   final ScrollController scrollController = ScrollController();
-  final ValueNotifier<bool> _scrollToBottomVisibleValue = ValueNotifier<bool>(false);
+  final ValueNotifier<bool> _scrollToBottomVisibleValue =
+      ValueNotifier<bool>(false);
 
   @override
   void initState() {
@@ -476,7 +880,8 @@ class _MessageListState extends State<MessageList> with PerAccountStoreAwareStat
   }
 
   @override
-  void onNewStore() { // TODO(#464) try to keep using old model until new one gets messages
+  void onNewStore() {
+    // TODO(#464) try to keep using old model until new one gets messages
     _initModel(PerAccountStoreWidget.of(context));
   }
 
@@ -523,7 +928,8 @@ class _MessageListState extends State<MessageList> with PerAccountStoreAwareStat
     _handleScrollMetrics(scrollController.position);
   }
 
-  bool _handleScrollMetricsNotification(ScrollMetricsNotification notification) {
+  bool _handleScrollMetricsNotification(
+      ScrollMetricsNotification notification) {
     if (notification.depth > 0) {
       // This notification came from some Viewport nested more deeply than the
       // one for the message list itself (e.g., from a CodeBlock).  Ignore it.
@@ -537,35 +943,34 @@ class _MessageListState extends State<MessageList> with PerAccountStoreAwareStat
   @override
   Widget build(BuildContext context) {
     assert(model != null);
-    if (!model!.fetched) return const Center(child: CircularProgressIndicator());
+    if (!model!.fetched)
+      return const Center(child: CircularProgressIndicator());
 
     // Pad the left and right insets, for small devices in landscape.
     return SafeArea(
-      // Don't let this be the place we pad the bottom inset. When there's
-      // no compose box, we want to let the message-list content pad it.
-      // TODO(#311) Remove as unnecessary if we do a bottom nav.
-      //   The nav will pad the bottom inset, and an ancestor of this widget
-      //   will have a `MediaQuery.removePadding` with `removeBottom: true`.
-      bottom: false,
-
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 760),
-          child: NotificationListener<ScrollMetricsNotification>(
-            onNotification: _handleScrollMetricsNotification,
-            child: Stack(
-              children: <Widget>[
-                _buildListView(context),
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  // TODO(#311) SafeArea shouldn't be needed if we have a
-                  //   bottom nav. That will pad the bottom inset.
-                  child: SafeArea(
-                    child: ScrollToBottomButton(
-                      scrollController: scrollController,
-                      visibleValue: _scrollToBottomVisibleValue))),
-              ])))));
+        // Don't let this be the place we pad the bottom inset. When there's
+        // no compose box, we want to let the message-list content pad it.
+        // TODO(#311) Remove as unnecessary if we do a bottom nav.
+        //   The nav will pad the bottom inset, and an ancestor of this widget
+        //   will have a `MediaQuery.removePadding` with `removeBottom: true`.
+        bottom: false,
+        child: Center(
+            child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 760),
+                child: NotificationListener<ScrollMetricsNotification>(
+                    onNotification: _handleScrollMetricsNotification,
+                    child: Stack(children: <Widget>[
+                      _buildListView(context),
+                      Positioned(
+                          bottom: 0,
+                          right: 0,
+                          // TODO(#311) SafeArea shouldn't be needed if we have a
+                          //   bottom nav. That will pad the bottom inset.
+                          child: SafeArea(
+                              child: ScrollToBottomButton(
+                                  scrollController: scrollController,
+                                  visibleValue: _scrollToBottomVisibleValue))),
+                    ])))));
   }
 
   Widget _buildListView(BuildContext context) {
@@ -573,40 +978,40 @@ class _MessageListState extends State<MessageList> with PerAccountStoreAwareStat
     const centerSliverKey = ValueKey('center sliver');
 
     Widget sliver = SliverStickyHeaderList(
-      headerPlacement: HeaderPlacement.scrollingStart,
-      delegate: SliverChildBuilderDelegate(
-        // To preserve state across rebuilds for individual [MessageItem]
-        // widgets as the size of [MessageListView.items] changes we need
-        // to match old widgets by their key to their new position in
-        // the list.
-        //
-        // The keys are of type [ValueKey] with a value of [Message.id]
-        // and here we use a O(log n) binary search method. This could
-        // be improved but for now it only triggers for materialized
-        // widgets. As a simple test, flinging through Combined feed in
-        // CZO on a Pixel 5, this only runs about 10 times per rebuild
-        // and the timing for each call is <100 microseconds.
-        //
-        // Non-message items (e.g., start and end markers) that do not
-        // have state that needs to be preserved have not been given keys
-        // and will not trigger this callback.
-        findChildIndexCallback: (Key key) {
-          final valueKey = key as ValueKey<int>;
-          final index = model!.findItemWithMessageId(valueKey.value);
-          if (index == -1) return null;
-          return length - 1 - (index - 2);
-        },
-        childCount: length + 2,
-        (context, i) {
-          // To reinforce that the end of the feed has been reached:
-          //   https://chat.zulip.org/#narrow/stream/243-mobile-team/topic/flutter.3A.20Mark-as-read/near/1680603
-          if (i == 0) return const SizedBox(height: 36);
+        headerPlacement: HeaderPlacement.scrollingStart,
+        delegate: SliverChildBuilderDelegate(
+            // To preserve state across rebuilds for individual [MessageItem]
+            // widgets as the size of [MessageListView.items] changes we need
+            // to match old widgets by their key to their new position in
+            // the list.
+            //
+            // The keys are of type [ValueKey] with a value of [Message.id]
+            // and here we use a O(log n) binary search method. This could
+            // be improved but for now it only triggers for materialized
+            // widgets. As a simple test, flinging through Combined feed in
+            // CZO on a Pixel 5, this only runs about 10 times per rebuild
+            // and the timing for each call is <100 microseconds.
+            //
+            // Non-message items (e.g., start and end markers) that do not
+            // have state that needs to be preserved have not been given keys
+            // and will not trigger this callback.
+            findChildIndexCallback: (Key key) {
+              final valueKey = key as ValueKey<int>;
+              final index = model!.findItemWithMessageId(valueKey.value);
+              if (index == -1) return null;
+              return length - 1 - (index - 2);
+            },
+            childCount: length + 2,
+            (context, i) {
+              // To reinforce that the end of the feed has been reached:
+              //   https://chat.zulip.org/#narrow/stream/243-mobile-team/topic/flutter.3A.20Mark-as-read/near/1680603
+              if (i == 0) return const SizedBox(height: 36);
 
-          if (i == 1) return MarkAsReadWidget(narrow: widget.narrow);
+              if (i == 1) return MarkAsReadWidget(narrow: widget.narrow);
 
-          final data = model!.items[length - 1 - (i - 2)];
-          return _buildItem(data, i);
-        }));
+              final data = model!.items[length - 1 - (i - 2)];
+              return _buildItem(data, i);
+            }));
 
     if (widget.narrow is CombinedFeedNarrow) {
       // TODO(#311) If we have a bottom nav, it will pad the bottom
@@ -615,66 +1020,70 @@ class _MessageListState extends State<MessageList> with PerAccountStoreAwareStat
     }
 
     return CustomScrollView(
-      // TODO: Offer `ScrollViewKeyboardDismissBehavior.interactive` (or
-      //   similar) if that is ever offered:
-      //     https://github.com/flutter/flutter/issues/57609#issuecomment-1355340849
-      keyboardDismissBehavior: switch (Theme.of(context).platform) {
-        // This seems to offer the only built-in way to close the keyboard
-        // on iOS. It's not ideal; see TODO above.
-        TargetPlatform.iOS => ScrollViewKeyboardDismissBehavior.onDrag,
-        // The Android keyboard seems to have a built-in close button.
-        _ => ScrollViewKeyboardDismissBehavior.manual,
-      },
+        // TODO: Offer `ScrollViewKeyboardDismissBehavior.interactive` (or
+        //   similar) if that is ever offered:
+        //     https://github.com/flutter/flutter/issues/57609#issuecomment-1355340849
+        keyboardDismissBehavior: switch (Theme.of(context).platform) {
+          // This seems to offer the only built-in way to close the keyboard
+          // on iOS. It's not ideal; see TODO above.
+          TargetPlatform.iOS => ScrollViewKeyboardDismissBehavior.onDrag,
+          // The Android keyboard seems to have a built-in close button.
+          _ => ScrollViewKeyboardDismissBehavior.manual,
+        },
+        controller: scrollController,
+        semanticChildCount: length + 2,
+        anchor: 1.0,
+        center: centerSliverKey,
+        slivers: [
+          sliver,
 
-      controller: scrollController,
-      semanticChildCount: length + 2,
-      anchor: 1.0,
-      center: centerSliverKey,
-
-      slivers: [
-        sliver,
-
-        // This is a trivial placeholder that occupies no space.  Its purpose is
-        // to have the key that's passed to [ScrollView.center], and so to cause
-        // the above [SliverStickyHeaderList] to run from bottom to top.
-        const SliverToBoxAdapter(key: centerSliverKey),
-      ]);
+          // This is a trivial placeholder that occupies no space.  Its purpose is
+          // to have the key that's passed to [ScrollView.center], and so to cause
+          // the above [SliverStickyHeaderList] to run from bottom to top.
+          const SliverToBoxAdapter(key: centerSliverKey),
+        ]);
   }
 
   Widget _buildItem(MessageListItem data, int i) {
     switch (data) {
       case MessageListHistoryStartItem():
         return const Center(
-          child: Padding(
-            padding: EdgeInsets.symmetric(vertical: 16.0),
-            child: Text("No earlier messages."))); // TODO use an icon
+            child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 16.0),
+                child: Text("No earlier messages."))); // TODO use an icon
       case MessageListLoadingItem():
         return const Center(
-          child: Padding(
-            padding: EdgeInsets.symmetric(vertical: 16.0),
-            child: CircularProgressIndicator())); // TODO perhaps a different indicator
+            child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 16.0),
+                child:
+                    CircularProgressIndicator())); // TODO perhaps a different indicator
       case MessageListRecipientHeaderItem():
-        final header = RecipientHeader(message: data.message, narrow: widget.narrow);
-        return StickyHeaderItem(allowOverflow: true,
-          header: header, child: header);
+        final header =
+            RecipientHeader(message: data.message, narrow: widget.narrow);
+        return StickyHeaderItem(
+            allowOverflow: true, header: header, child: header);
       case MessageListDateSeparatorItem():
-        final header = RecipientHeader(message: data.message, narrow: widget.narrow);
-        return StickyHeaderItem(allowOverflow: true,
-          header: header,
-          child: DateSeparator(message: data.message));
+        final header =
+            RecipientHeader(message: data.message, narrow: widget.narrow);
+        return StickyHeaderItem(
+            allowOverflow: true,
+            header: header,
+            child: DateSeparator(message: data.message));
       case MessageListMessageItem():
-        final header = RecipientHeader(message: data.message, narrow: widget.narrow);
+        final header =
+            RecipientHeader(message: data.message, narrow: widget.narrow);
         return MessageItem(
-          key: ValueKey(data.message.id),
-          header: header,
-          trailingWhitespace: i == 1 ? 8 : 11,
-          item: data);
+            key: ValueKey(data.message.id),
+            header: header,
+            trailingWhitespace: i == 1 ? 8 : 11,
+            item: data);
     }
   }
 }
 
 class ScrollToBottomButton extends StatelessWidget {
-  const ScrollToBottomButton({super.key, required this.scrollController, required this.visibleValue});
+  const ScrollToBottomButton(
+      {super.key, required this.scrollController, required this.visibleValue});
 
   final ValueNotifier<bool> visibleValue;
   final ScrollController scrollController;
@@ -683,26 +1092,24 @@ class ScrollToBottomButton extends StatelessWidget {
     final distance = scrollController.position.pixels;
     final durationMsAtSpeedLimit = (1000 * distance / 8000).ceil();
     final durationMs = max(300, durationMsAtSpeedLimit);
-    scrollController.animateTo(
-      0,
-      duration: Duration(milliseconds: durationMs),
-      curve: Curves.ease);
+    scrollController.animateTo(0,
+        duration: Duration(milliseconds: durationMs), curve: Curves.ease);
   }
 
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<bool>(
-      valueListenable: visibleValue,
-      builder: (BuildContext context, bool value, Widget? child) {
-        return (value && child != null) ? child : const SizedBox.shrink();
-      },
-      // TODO: fix hardcoded values for size and style here
-      child: IconButton(
-        tooltip: "Scroll to bottom",
-        icon: const Icon(Icons.expand_circle_down_rounded),
-        iconSize: 40,
-        color: const HSLColor.fromAHSL(0.5,240,0.96,0.68).toColor(),
-        onPressed: _navigateToBottom));
+        valueListenable: visibleValue,
+        builder: (BuildContext context, bool value, Widget? child) {
+          return (value && child != null) ? child : const SizedBox.shrink();
+        },
+        // TODO: fix hardcoded values for size and style here
+        child: IconButton(
+            tooltip: "Scroll to bottom",
+            icon: const Icon(Icons.expand_circle_down_rounded),
+            iconSize: 40,
+            color: const HSLColor.fromAHSL(0.5, 240, 0.96, 0.68).toColor(),
+            onPressed: _navigateToBottom));
   }
 }
 
@@ -723,9 +1130,11 @@ class MarkAsReadWidget extends StatelessWidget {
     } catch (e) {
       if (!context.mounted) return;
       final zulipLocalizations = ZulipLocalizations.of(context);
-      await showErrorDialog(context: context,
-        title: zulipLocalizations.errorMarkAsReadFailedTitle,
-        message: e.toString()); // TODO(#741): extract user-facing message better
+      await showErrorDialog(
+          context: context,
+          title: zulipLocalizations.errorMarkAsReadFailedTitle,
+          message:
+              e.toString()); // TODO(#741): extract user-facing message better
       return;
     }
     if (!context.mounted) return;
@@ -744,42 +1153,51 @@ class MarkAsReadWidget extends StatelessWidget {
     return IgnorePointer(
       ignoring: areMessagesRead,
       child: AnimatedOpacity(
-        opacity: areMessagesRead ? 0 : 1,
-        duration: Duration(milliseconds: areMessagesRead ? 2000 : 300),
-        curve: Curves.easeOut,
-        child: SizedBox(width: double.infinity,
-          // Design referenced from:
-          //   https://www.figma.com/file/1JTNtYo9memgW7vV6d0ygq/Zulip-Mobile?type=design&node-id=132-9684&mode=design&t=jJwHzloKJ0TMOG4M-0
-          child: Padding(
-            // vertical padding adjusted for tap target height (48px) of button
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10 - ((48 - 38) / 2)),
-            child: FilledButton.icon(
-              style: FilledButton.styleFrom(
-                // TODO(#95) need dark-theme colors (foreground and background)
-                backgroundColor: _UnreadMarker.color,
-                minimumSize: const Size.fromHeight(38),
-                textStyle:
-                  // Restate [FilledButton]'s default, which inherits from
-                  // [zulipTypography]…
-                  Theme.of(context).textTheme.labelLarge!
-                  // …then clobber some attributes to follow Figma:
-                  .merge(TextStyle(
-                    fontSize: 18,
-                    letterSpacing: proportionalLetterSpacing(context,
-                      kButtonTextLetterSpacingProportion, baseFontSize: 18),
-                    height: (23 / 18))
-                  .merge(weightVariableTextStyle(context, wght: 400))),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(7)),
-              ),
-              onPressed: () => _handlePress(context),
-              icon: const Icon(Icons.playlist_add_check),
-              label: Text(zulipLocalizations.markAllAsReadLabel))))),
+          opacity: areMessagesRead ? 0 : 1,
+          duration: Duration(milliseconds: areMessagesRead ? 2000 : 300),
+          curve: Curves.easeOut,
+          child: SizedBox(
+              width: double.infinity,
+              // Design referenced from:
+              //   https://www.figma.com/file/1JTNtYo9memgW7vV6d0ygq/Zulip-Mobile?type=design&node-id=132-9684&mode=design&t=jJwHzloKJ0TMOG4M-0
+              child: Padding(
+                  // vertical padding adjusted for tap target height (48px) of button
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 10, vertical: 10 - ((48 - 38) / 2)),
+                  child: FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        // TODO(#95) need dark-theme colors (foreground and background)
+                        backgroundColor: _UnreadMarker.color,
+                        minimumSize: const Size.fromHeight(38),
+                        textStyle:
+                            // Restate [FilledButton]'s default, which inherits from
+                            // [zulipTypography]…
+                            Theme.of(context)
+                                .textTheme
+                                .labelLarge!
+                                // …then clobber some attributes to follow Figma:
+                                .merge(TextStyle(
+                                        fontSize: 18,
+                                        letterSpacing: proportionalLetterSpacing(
+                                            context,
+                                            kButtonTextLetterSpacingProportion,
+                                            baseFontSize: 18),
+                                        height: (23 / 18))
+                                    .merge(weightVariableTextStyle(context,
+                                        wght: 400))),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(7)),
+                      ),
+                      onPressed: () => _handlePress(context),
+                      icon: const Icon(Icons.playlist_add_check),
+                      label: Text(zulipLocalizations.markAllAsReadLabel))))),
     );
   }
 }
 
 class RecipientHeader extends StatelessWidget {
-  const RecipientHeader({super.key, required this.message, required this.narrow});
+  const RecipientHeader(
+      {super.key, required this.message, required this.narrow});
 
   final Message message;
   final Narrow narrow;
@@ -788,8 +1206,8 @@ class RecipientHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final message = this.message;
     return switch (message) {
-      StreamMessage() => StreamMessageRecipientHeader(message: message,
-        showStream: narrow is CombinedFeedNarrow),
+      StreamMessage() => StreamMessageRecipientHeader(
+          message: message, showStream: narrow is CombinedFeedNarrow),
       DmMessage() => DmRecipientHeader(message: message),
     };
   }
@@ -809,27 +1227,29 @@ class DateSeparator extends StatelessWidget {
     // to align with the vertically centered divider lines.
     const textBottomPadding = 2.0;
 
-    return ColoredBox(color:const Color(0xffffffff),
+    return ColoredBox(
+      color: const Color(0xffffffff),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
-        child: Row(children: [
-          const Expanded(
-            child: SizedBox(height: 0,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: _line))))),
-          Padding(padding: const EdgeInsets.fromLTRB(2, 0, 2, textBottomPadding),
-            child: DateText(
-              fontSize: 16,
-              height: (16 / 16),
-              timestamp: message.timestamp)),
-          const SizedBox(height: 0, width: 12,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                border: Border(
-                  bottom: _line)))),
-        ])),
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
+          child: Row(children: [
+            const Expanded(
+                child: SizedBox(
+                    height: 0,
+                    child: DecoratedBox(
+                        decoration:
+                            BoxDecoration(border: Border(bottom: _line))))),
+            Padding(
+                padding: const EdgeInsets.fromLTRB(2, 0, 2, textBottomPadding),
+                child: DateText(
+                    fontSize: 16,
+                    height: (16 / 16),
+                    timestamp: message.timestamp)),
+            const SizedBox(
+                height: 0,
+                width: 12,
+                child: DecoratedBox(
+                    decoration: BoxDecoration(border: Border(bottom: _line)))),
+          ])),
     );
   }
 }
@@ -850,16 +1270,17 @@ class MessageItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final message = item.message;
     return StickyHeaderItem(
-      allowOverflow: !item.isLastInBlock,
-      header: header,
-      child: _UnreadMarker(
-        isRead: message.flags.contains(MessageFlag.read),
-        child: ColoredBox(
-          color:const Color(0xffffffff),
-          child: Column(children: [
-            MessageWithPossibleSender(item: item),
-            if (trailingWhitespace != null && item.isLastInBlock) SizedBox(height: trailingWhitespace!),
-          ]))));
+        allowOverflow: !item.isLastInBlock,
+        header: header,
+        child: _UnreadMarker(
+            isRead: message.flags.contains(MessageFlag.read),
+            child: ColoredBox(
+                color: const Color(0xffffffff),
+                child: Column(children: [
+                  MessageWithPossibleSender(item: item),
+                  if (trailingWhitespace != null && item.isLastInBlock)
+                    SizedBox(height: trailingWhitespace!),
+                ]))));
   }
 }
 
@@ -885,29 +1306,30 @@ class _UnreadMarker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        child,
-        Positioned(
+    return Stack(children: [
+      child,
+      Positioned(
           top: 0,
           left: 0,
           bottom: 0,
           width: 4,
           child: AnimatedOpacity(
-            opacity: isRead ? 0 : 1,
-            // Web uses 2s and 0.3s durations, and a CSS ease-out curve.
-            // See zulip:web/styles/message_row.css .
-            duration: Duration(milliseconds: isRead ? 2000 : 300),
-            curve: Curves.easeOut,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: color,
-                // TODO(#95): Don't show this extra border in dark mode, see:
-                //   https://github.com/zulip/zulip-flutter/pull/317#issuecomment-1784311663
-                border: Border(left: BorderSide(
-                  width: 1,
-                  color:const Color(0xffffffff).withOpacity(0.6))))))),
-      ]);
+              opacity: isRead ? 0 : 1,
+              // Web uses 2s and 0.3s durations, and a CSS ease-out curve.
+              // See zulip:web/styles/message_row.css .
+              duration: Duration(milliseconds: isRead ? 2000 : 300),
+              curve: Curves.easeOut,
+              child: DecoratedBox(
+                  decoration: BoxDecoration(
+                      color: color,
+                      // TODO(#95): Don't show this extra border in dark mode, see:
+                      //   https://github.com/zulip/zulip-flutter/pull/317#issuecomment-1784311663
+                      border: Border(
+                          left: BorderSide(
+                              width: 1,
+                              color: const Color(0xffffffff)
+                                  .withOpacity(0.6))))))),
+    ]);
   }
 }
 
@@ -947,64 +1369,67 @@ class StreamMessageRecipientHeader extends StatelessWidget {
       streamWidget = const SizedBox(width: 16);
     } else {
       final stream = store.streams[message.streamId];
-      final streamName = stream?.name ?? message.displayRecipient; // TODO(log) if missing
+      final streamName =
+          stream?.name ?? message.displayRecipient; // TODO(log) if missing
 
       streamWidget = GestureDetector(
-        onTap: () => Navigator.push(context,
-          MessageListPage.buildRoute(context: context,
-            narrow: StreamNarrow(message.streamId))),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
+          onTap: () => Navigator.push(
+              context,
+              MessageListPage.buildRoute(
+                  context: context, narrow: StreamNarrow(message.streamId))),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
             Padding(
-              // Figma specifies 5px horizontal spacing around an icon that's
-              // 18x18 and includes 1px padding.  The icon SVG is flush with
-              // the edges, so make it 16x16 with 6px horizontal padding.
-              // Bottom padding added here to shift icon up to
-              // match alignment with text visually.
-              padding: const EdgeInsets.only(left: 6, right: 6, bottom: 3),
-              child: Icon(size: 16, color: iconColor,
-                // A null [Icon.icon] makes a blank space.
-                (stream != null) ? iconDataForStream(stream) : null)),
+                // Figma specifies 5px horizontal spacing around an icon that's
+                // 18x18 and includes 1px padding.  The icon SVG is flush with
+                // the edges, so make it 16x16 with 6px horizontal padding.
+                // Bottom padding added here to shift icon up to
+                // match alignment with text visually.
+                padding: const EdgeInsets.only(left: 6, right: 6, bottom: 3),
+                child: Icon(
+                    size: 16,
+                    color: iconColor,
+                    // A null [Icon.icon] makes a blank space.
+                    (stream != null) ? iconDataForStream(stream) : null)),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 11),
               child: Text(streamName,
-                style: recipientHeaderTextStyle(context),
-                overflow: TextOverflow.ellipsis),
+                  style: recipientHeaderTextStyle(context),
+                  overflow: TextOverflow.ellipsis),
             ),
             Padding(
-              // Figma has 5px horizontal padding around an 8px wide icon.
-              // Icon is 16px wide here so horizontal padding is 1px.
-              padding: const EdgeInsets.symmetric(horizontal: 1),
-              child: Icon(size: 16,
-                color: const Color(0xff000000).withOpacity(0.3),
-                ZulipIcons.chevron_right)),
+                // Figma has 5px horizontal padding around an 8px wide icon.
+                // Icon is 16px wide here so horizontal padding is 1px.
+                padding: const EdgeInsets.symmetric(horizontal: 1),
+                child: Icon(
+                    size: 16,
+                    color: const Color(0xff000000).withOpacity(0.3),
+                    ZulipIcons.chevron_right)),
           ]));
     }
 
     return GestureDetector(
-      onTap: () => Navigator.push(context,
-        MessageListPage.buildRoute(context: context,
-          narrow: TopicNarrow.ofMessage(message))),
-      child: ColoredBox(
-        color: backgroundColor,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // TODO(#282): Long stream name will break layout; find a fix.
-            streamWidget,
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 11),
-                child: Text(topic,
-                  // TODO: Give a way to see the whole topic (maybe a
-                  //   long-press interaction?)
-                  overflow: TextOverflow.ellipsis,
-                  style: recipientHeaderTextStyle(context)))),
-            // TODO topic links?
-            // Then web also has edit/resolve/mute buttons. Skip those for mobile.
-            RecipientHeaderDate(message: message),
-          ])));
+        onTap: () => Navigator.push(
+            context,
+            MessageListPage.buildRoute(
+                context: context, narrow: TopicNarrow.ofMessage(message))),
+        child: ColoredBox(
+            color: backgroundColor,
+            child:
+                Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+              // TODO(#282): Long stream name will break layout; find a fix.
+              streamWidget,
+              Expanded(
+                  child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 11),
+                      child: Text(topic,
+                          // TODO: Give a way to see the whole topic (maybe a
+                          //   long-press interaction?)
+                          overflow: TextOverflow.ellipsis,
+                          style: recipientHeaderTextStyle(context)))),
+              // TODO topic links?
+              // Then web also has edit/resolve/mute buttons. Skip those for mobile.
+              RecipientHeaderDate(message: message),
+            ])));
   }
 }
 
@@ -1019,45 +1444,51 @@ class DmRecipientHeader extends StatelessWidget {
     final store = PerAccountStoreWidget.of(context);
     final String title;
     if (message.allRecipientIds.length > 1) {
-      title = zulipLocalizations.messageListGroupYouAndOthers(message.allRecipientIds
-        .where((id) => id != store.selfUserId)
-        .map((id) => store.users[id]?.fullName ?? zulipLocalizations.unknownUserName)
-        .sorted()
-        .join(", "));
+      title = zulipLocalizations.messageListGroupYouAndOthers(message
+          .allRecipientIds
+          .where((id) => id != store.selfUserId)
+          .map((id) =>
+              store.users[id]?.fullName ?? zulipLocalizations.unknownUserName)
+          .sorted()
+          .join(", "));
     } else {
       // TODO pick string; web has glitchy "You and $yourname"
       title = zulipLocalizations.messageListGroupYouWithYourself;
     }
 
     return GestureDetector(
-      onTap: () => Navigator.push(context,
-        MessageListPage.buildRoute(context: context,
-          narrow: DmNarrow.ofMessage(message, selfUserId: store.selfUserId))),
-      child: ColoredBox(
-        color: _kDmRecipientHeaderColor,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 11),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6),
-                child: Icon(
-                  color: _kRecipientHeaderTextColor,
-                  size: 16,
-                  ZulipIcons.user)),
-              Expanded(
-                child: Text(title,
-                  style: recipientHeaderTextStyle(context),
-                  overflow: TextOverflow.ellipsis)),
-              RecipientHeaderDate(message: message),
-            ]))));
+        onTap: () => Navigator.push(
+            context,
+            MessageListPage.buildRoute(
+                context: context,
+                narrow:
+                    DmNarrow.ofMessage(message, selfUserId: store.selfUserId))),
+        child: ColoredBox(
+            color: _kDmRecipientHeaderColor,
+            child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 11),
+                child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          child: Icon(
+                              color: _kRecipientHeaderTextColor,
+                              size: 16,
+                              ZulipIcons.user)),
+                      Expanded(
+                          child: Text(title,
+                              style: recipientHeaderTextStyle(context),
+                              overflow: TextOverflow.ellipsis)),
+                      RecipientHeaderDate(message: message),
+                    ]))));
   }
 }
 
 // TODO(#95): web uses different color in dark mode
 // --color-background-private-message-header in web/styles/app_variables.css
-final _kDmRecipientHeaderColor = const HSLColor.fromAHSL(1, 46, 0.35, 0.93).toColor();
+final _kDmRecipientHeaderColor =
+    const HSLColor.fromAHSL(1, 46, 0.35, 0.93).toColor();
 
 TextStyle recipientHeaderTextStyle(BuildContext context) {
   return TextStyle(
@@ -1067,7 +1498,9 @@ TextStyle recipientHeaderTextStyle(BuildContext context) {
     height: (18 / 16),
   ).merge(weightVariableTextStyle(context, wght: 600));
 }
-final _kRecipientHeaderTextColor = const HSLColor.fromAHSL(1, 0, 0, 0.15).toColor();
+
+final _kRecipientHeaderTextColor =
+    const HSLColor.fromAHSL(1, 0, 0, 0.15).toColor();
 
 class RecipientHeaderDate extends StatelessWidget {
   const RecipientHeaderDate({super.key, required this.message});
@@ -1077,14 +1510,14 @@ class RecipientHeaderDate extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(10, 0, 16, 0),
-      child: DateText(
-        fontSize: 16,
-        // In Figma this has a line-height of 19, but using 18
-        // here to match the stream/topic text widgets helps
-        // to align all the text to the same baseline.
-        height: (18 / 16),
-        timestamp: message.timestamp));
+        padding: const EdgeInsets.fromLTRB(10, 0, 16, 0),
+        child: DateText(
+            fontSize: 16,
+            // In Figma this has a line-height of 19, but using 18
+            // here to match the stream/topic text widgets helps
+            // to align all the text to the same baseline.
+            height: (18 / 16),
+            timestamp: message.timestamp));
   }
 }
 
@@ -1104,18 +1537,20 @@ class DateText extends StatelessWidget {
   Widget build(BuildContext context) {
     final zulipLocalizations = ZulipLocalizations.of(context);
     return Text(
-      style: TextStyle(
-        color: const HSLColor.fromAHSL(0.75, 0, 0, 0.15).toColor(),
-        fontSize: fontSize,
-        height: height,
-        // This is equivalent to css `all-small-caps`, see:
-        //   https://developer.mozilla.org/en-US/docs/Web/CSS/font-variant-caps#all-small-caps
-        fontFeatures: const [FontFeature.enable('c2sc'), FontFeature.enable('smcp')],
-      ),
-      formatHeaderDate(
-        zulipLocalizations,
-        DateTime.fromMillisecondsSinceEpoch(timestamp * 1000),
-        now: DateTime.now()));
+        style: TextStyle(
+          color: const HSLColor.fromAHSL(0.75, 0, 0, 0.15).toColor(),
+          fontSize: fontSize,
+          height: height,
+          // This is equivalent to css `all-small-caps`, see:
+          //   https://developer.mozilla.org/en-US/docs/Web/CSS/font-variant-caps#all-small-caps
+          fontFeatures: const [
+            FontFeature.enable('c2sc'),
+            FontFeature.enable('smcp')
+          ],
+        ),
+        formatHeaderDate(zulipLocalizations,
+            DateTime.fromMillisecondsSinceEpoch(timestamp * 1000),
+            now: DateTime.now()));
   }
 }
 
@@ -1126,7 +1561,7 @@ String formatHeaderDate(
   required DateTime now,
 }) {
   assert(!dateTime.isUtc && !now.isUtc,
-    '`dateTime` and `now` need to be in local time.');
+      '`dateTime` and `now` need to be in local time.');
 
   if (dateTime.year == now.year &&
       dateTime.month == now.month &&
@@ -1135,8 +1570,8 @@ String formatHeaderDate(
   }
 
   final yesterday = now
-    .copyWith(hour: 12, minute: 0, second: 0, millisecond: 0, microsecond: 0)
-    .add(const Duration(days: -1));
+      .copyWith(hour: 12, minute: 0, second: 0, millisecond: 0, microsecond: 0)
+      .add(const Duration(days: -1));
   if (dateTime.year == yesterday.year &&
       dateTime.month == yesterday.month &&
       dateTime.day == yesterday.day) {
@@ -1176,82 +1611,95 @@ class MessageWithPossibleSender extends StatelessWidget {
 
     Widget? senderRow;
     if (item.showSender) {
-      final time = _kMessageTimestampFormat
-        .format(DateTime.fromMillisecondsSinceEpoch(1000 * message.timestamp));
+      final time = _kMessageTimestampFormat.format(
+          DateTime.fromMillisecondsSinceEpoch(1000 * message.timestamp));
       senderRow = Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.baseline,
-        textBaseline: localizedTextBaseline(context),
-        children: [
-          Flexible(
-            child: GestureDetector(
-              onTap: () => Navigator.push(context,
-                ProfilePage.buildRoute(context: context,
-                  userId: message.senderId)),
-              child: Row(
-                children: [
-                  Avatar(size: 32, borderRadius: 3,
-                    userId: message.senderId),
-                  const SizedBox(width: 8),
-                  Flexible(
-                    child: Text(message.senderFullName, // TODO get from user data
-                      style: TextStyle(
-                        fontFamily: 'Source Sans 3',
-                        fontSize: 18,
-                        height: (22 / 18),
-                        color: const HSLColor.fromAHSL(1, 0, 0, 0.2).toColor(),
-                      ).merge(weightVariableTextStyle(context, wght: 600)),
-                      overflow: TextOverflow.ellipsis)),
-                  if (sender?.isBot ?? false) ...[
-                    const SizedBox(width: 5),
-                    const Icon(
-                      ZulipIcons.bot,
-                      size: 15,
-                      color: Color.fromARGB(255, 159, 173, 173),
-                    ),
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: localizedTextBaseline(context),
+          children: [
+            Flexible(
+                child: GestureDetector(
+                    onTap: () => Navigator.push(
+                        context,
+                        ProfilePage.buildRoute(
+                            context: context, userId: message.senderId)),
+                    child: Row(children: [
+                      Avatar(
+                          size: 32, borderRadius: 3, userId: message.senderId),
+                      const SizedBox(width: 8),
+                      Flexible(
+                          child: Text(
+                              message.senderFullName, // TODO get from user data
+                              style: TextStyle(
+                                fontFamily: 'Source Sans 3',
+                                fontSize: 18,
+                                height: (22 / 18),
+                                color: const HSLColor.fromAHSL(1, 0, 0, 0.2)
+                                    .toColor(),
+                              ).merge(
+                                  weightVariableTextStyle(context, wght: 600)),
+                              overflow: TextOverflow.ellipsis)),
+                      if (sender?.isBot ?? false) ...[
+                        const SizedBox(width: 5),
+                        const Icon(
+                          ZulipIcons.bot,
+                          size: 15,
+                          color: Color.fromARGB(255, 159, 173, 173),
+                        ),
+                      ],
+                    ]))),
+            const SizedBox(width: 4),
+            Text(time,
+                style: TextStyle(
+                  color: _kMessageTimestampColor,
+                  fontFamily: 'Source Sans 3',
+                  fontSize: 16,
+                  height: (18 / 16),
+                  fontFeatures: const [
+                    FontFeature.enable('c2sc'),
+                    FontFeature.enable('smcp')
                   ],
-                ]))),
-          const SizedBox(width: 4),
-          Text(time,
-            style: TextStyle(
-              color: _kMessageTimestampColor,
-              fontFamily: 'Source Sans 3',
-              fontSize: 16,
-              height: (18 / 16),
-              fontFeatures: const [FontFeature.enable('c2sc'), FontFeature.enable('smcp')],
-            ).merge(weightVariableTextStyle(context))),
-        ]);
+                ).merge(weightVariableTextStyle(context))),
+          ]);
     }
 
     return GestureDetector(
-      behavior: HitTestBehavior.translucent,
-      onLongPress: () => showMessageActionSheet(context: context, message: message),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Column(children: [
-          if (senderRow != null)
-            Padding(padding: const EdgeInsets.fromLTRB(16, 2, 16, 0),
-              child: senderRow),
-          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  MessageContent(message: message, content: item.content),
-                  if ((message.reactions?.total ?? 0) > 0)
-                    ReactionChipsList(messageId: message.id, reactions: message.reactions!)
-                ])),
-            SizedBox(width: 16,
-              child: message.flags.contains(MessageFlag.starred)
-                // TODO(#157): fix how star marker aligns with message content
-                // Design from Figma at:
-                //   https://www.figma.com/file/1JTNtYo9memgW7vV6d0ygq/Zulip-Mobile?node-id=813%3A28817&mode=dev .
-                ? Padding(padding: const EdgeInsets.only(top: 4),
-                    child: Icon(ZulipIcons.star_filled, size: 16, color: _starColor))
-                : null),
-          ]),
-        ])));
+        behavior: HitTestBehavior.translucent,
+        onLongPress: () =>
+            showMessageActionSheet(context: context, message: message),
+        child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Column(children: [
+              if (senderRow != null)
+                Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 2, 16, 0),
+                    child: senderRow),
+              Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const SizedBox(width: 16),
+                Expanded(
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                      MessageContent(message: message, content: item.content),
+                      if ((message.reactions?.total ?? 0) > 0)
+                        ReactionChipsList(
+                            messageId: message.id,
+                            reactions: message.reactions!)
+                    ])),
+                SizedBox(
+                    width: 16,
+                    child: message.flags.contains(MessageFlag.starred)
+                        // TODO(#157): fix how star marker aligns with message content
+                        // Design from Figma at:
+                        //   https://www.figma.com/file/1JTNtYo9memgW7vV6d0ygq/Zulip-Mobile?node-id=813%3A28817&mode=dev .
+                        ? Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Icon(ZulipIcons.star_filled,
+                                size: 16, color: _starColor))
+                        : null),
+              ]),
+            ])));
   }
 }
 
@@ -1293,22 +1741,22 @@ Future<void> markNarrowAsRead(
 
   while (true) {
     final result = await updateMessageFlagsForNarrow(connection,
-      anchor: anchor,
-      // [AnchorCode.oldest] is an anchor ID lower than any valid
-      // message ID; and follow-up requests will have already
-      // processed the anchor ID, so we just want this to be
-      // unconditionally false.
-      includeAnchor: false,
-      // There is an upper limit of 5000 messages per batch
-      // (numBefore + numAfter <= 5000) enforced on the server.
-      // See `update_message_flags_in_narrow` in zerver/views/message_flags.py .
-      // zulip-mobile uses `numAfter` of 5000, but web uses 1000
-      // for more responsive feedback. See zulip@f0d87fcf6.
-      numBefore: 0,
-      numAfter: 1000,
-      narrow: apiNarrow,
-      op: UpdateMessageFlagsOp.add,
-      flag: MessageFlag.read);
+        anchor: anchor,
+        // [AnchorCode.oldest] is an anchor ID lower than any valid
+        // message ID; and follow-up requests will have already
+        // processed the anchor ID, so we just want this to be
+        // unconditionally false.
+        includeAnchor: false,
+        // There is an upper limit of 5000 messages per batch
+        // (numBefore + numAfter <= 5000) enforced on the server.
+        // See `update_message_flags_in_narrow` in zerver/views/message_flags.py .
+        // zulip-mobile uses `numAfter` of 5000, but web uses 1000
+        // for more responsive feedback. See zulip@f0d87fcf6.
+        numBefore: 0,
+        numAfter: 1000,
+        narrow: apiNarrow,
+        op: UpdateMessageFlagsOp.add,
+        flag: MessageFlag.read);
     if (!context.mounted) {
       scaffoldMessenger.clearSnackBars();
       return;
@@ -1323,8 +1771,10 @@ Future<void> markNarrowAsRead(
         // so be sure to clear them out here.
         scaffoldMessenger
           ..clearSnackBars()
-          ..showSnackBar(SnackBar(behavior: SnackBarBehavior.floating,
-              content: Text(zulipLocalizations.markAsReadComplete(updatedCount))));
+          ..showSnackBar(SnackBar(
+              behavior: SnackBarBehavior.floating,
+              content:
+                  Text(zulipLocalizations.markAsReadComplete(updatedCount))));
       }
       return;
     }
@@ -1333,9 +1783,10 @@ Future<void> markNarrowAsRead(
       // No messages were in the range of the request.
       // This should be impossible given that `foundNewest` was false
       // (and that our `numAfter` was positive.)
-      await showErrorDialog(context: context,
-        title: zulipLocalizations.errorMarkAsReadFailedTitle,
-        message: zulipLocalizations.errorInvalidResponse);
+      await showErrorDialog(
+          context: context,
+          title: zulipLocalizations.errorMarkAsReadFailedTitle,
+          message: zulipLocalizations.errorInvalidResponse);
       return;
     }
     anchor = NumericAnchor(result.lastProcessedId!);
@@ -1354,12 +1805,14 @@ Future<void> markNarrowAsRead(
     //   results in the same message popping in and out and the user experience
     //   is better for now if we allow them to run their timer through
     //   and clear the backlog later.
-    scaffoldMessenger.showSnackBar(SnackBar(behavior: SnackBarBehavior.floating,
-      content: Text(zulipLocalizations.markAsReadInProgress)));
+    scaffoldMessenger.showSnackBar(SnackBar(
+        behavior: SnackBarBehavior.floating,
+        content: Text(zulipLocalizations.markAsReadInProgress)));
   }
 }
 
-Future<void> _legacyMarkNarrowAsRead(BuildContext context, Narrow narrow) async {
+Future<void> _legacyMarkNarrowAsRead(
+    BuildContext context, Narrow narrow) async {
   final store = PerAccountStoreWidget.of(context);
   final connection = store.connection;
   switch (narrow) {
@@ -1376,8 +1829,8 @@ Future<void> _legacyMarkNarrowAsRead(BuildContext context, Narrow narrow) async 
       // of pushing the button.
       if (unreadDms == null) return;
       await updateMessageFlags(connection,
-        messages: unreadDms,
-        op: UpdateMessageFlagsOp.add,
-        flag: MessageFlag.read);
+          messages: unreadDms,
+          op: UpdateMessageFlagsOp.add,
+          flag: MessageFlag.read);
   }
 }
